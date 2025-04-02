@@ -23,7 +23,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "APIClient",
+		Title:  "Crashtest",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
@@ -36,11 +36,17 @@ func main() {
 			Theme:                windows.Dark,
 		},
 		Mac: &mac.Options{
-			WebviewIsTransparent: true,
-			WindowIsTranslucent:  false,
-			TitleBar:             mac.TitleBarHiddenInset(),
-			Appearance:           mac.NSAppearanceNameDarkAqua,
+		    TitleBar: &mac.TitleBar{
+		        TitlebarAppearsTransparent: true,
+		        HideTitle:                  false,
+		        HideTitleBar:               false,
+		        FullSizeContent:            true,
+		        UseToolbar:                 false,
+		        HideToolbarSeparator:       true,
+		    },
+		    Appearance: mac.NSAppearanceNameDarkAqua,
 		},
+
 		BackgroundColour: &options.RGBA{R: 17, G: 24, B: 39, A: 1},
 		OnStartup:        app.startup,
 		Bind: []interface{}{

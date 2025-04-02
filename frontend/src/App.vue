@@ -1,9 +1,8 @@
 <template>
-  <div class="h-full flex flex-col bg-gray-900 text-gray-200">
+  <div class="h-full flex flex-col bg-gray-900 text-gray-200" style="--wails-draggable:drag">
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col pt-1 px-2 pb-2 pt-2 gap-2">
-      <!-- Request Bar - Integrated design -->
-      <div class="flex items-center pl-[80px] h-8">
+    <main class="flex-grow flex flex-col pt-1 px-2 pb-2 pt-8 gap-2">
+      <div class="flex items-center h-8" >
         <div class="relative flex-grow bg-gray-800 border border-gray-700 rounded-md h-8 flex items-center overflow-hidden">
           <!-- Method Selector -->
           <div class="border-r border-gray-700">
@@ -325,23 +324,3 @@ async function sendRequest() {
   }
 }
 </script>
-
-<style>
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-</style>
