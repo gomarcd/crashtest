@@ -12,7 +12,6 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             platform: linux
@@ -48,8 +47,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
         run: |
@@ -66,27 +65,33 @@ jobs:
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      - name: Build Application
+      - name: Build Application Linux
+        if: matrix.platform == 'linux'
         shell: bash
         run: |
           mkdir -p build/bin
-          BUILD_CMD="wails build -trimpath ${{ matrix.build_args }}"
-          if [[ "${{ matrix.platform }}" == "linux" ]]; then
-            $BUILD_CMD -o "${{ matrix.output_path }}"
-          elif [[ "${{ matrix.platform }}" == "windows" ]]; then
-             pwsh -Command "$BUILD_CMD -o '${{ matrix.output_path }}'"
-          elif [[ "${{ matrix.platform }}" == "darwin" ]]; then
-            $BUILD_CMD
-            APP_BUNDLE_PATH="build/bin/Crashtest.app"
-            TARGET_ZIP_PATH="${{ matrix.output_path }}"
-            if [ -d "$APP_BUNDLE_PATH" ]; then
-              cd build/bin
-              zip -r "${{ matrix.artifact_name }}" Crashtest.app
-              cd ../..
-            else
-              exit 1
-            fi
+          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.output_path }}
+
+      - name: Build Application Darwin
+        if: matrix.platform == 'darwin'
+        shell: bash
+        run: |
+          mkdir -p build/bin
+          wails build -trimpath ${{ matrix.build_args }}
+          if [ -d build/bin/Crashtest.app ]; then
+            cd build/bin
+            zip -r ${{ matrix.artifact_name }} Crashtest.app
+            cd ../..
+          else
+            exit 1
           fi
+
+      - name: Build Application Windows
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          mkdir -p build/bin
+          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.output_path }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -107,14 +112,10 @@ jobs:
         with:
           path: ./artifacts
 
-      # *** REVERTED STEP ***
       - name: Prepare artifacts for release
         run: |
           mkdir -p ./release
-          # Use find to copy any files found within the artifacts subdirectories
           find ./artifacts -type f -exec cp {} ./release/ \;
-          # Optional: list what was actually copied
-          echo "Prepared files for release:"
           ls -l ./release
 
       - name: Create GitHub Release
@@ -122,7 +123,7 @@ jobs:
         with:
           files: ./release/*
           draft: false
-          prerelease: false # Kept this as false based on earlier discussion
+          prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
