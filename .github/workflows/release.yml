@@ -93,7 +93,7 @@ jobs:
         with:
           build-name: ${{ needs.determine-platforms.outputs.app_name }}
           build-platform: ${{ matrix.platform }}
-          package: true
+          package: false
           go-version-file: go.mod
 
       - name: Upload build artifact
