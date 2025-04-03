@@ -34,8 +34,8 @@ func main() {
 			WindowIsTranslucent:  true,
 			DisableWindowIcon:    false,
 			Theme:                windows.Dark,
-			Frameless:            true,
 		},
+		Frameless: true,
 		Mac: &mac.Options{
 		    TitleBar: &mac.TitleBar{
 		        TitlebarAppearsTransparent: true,
