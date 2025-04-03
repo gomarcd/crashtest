@@ -107,19 +107,22 @@ jobs:
         with:
           path: ./artifacts
 
+      # *** REVERTED STEP ***
       - name: Prepare artifacts for release
         run: |
           mkdir -p ./release
-          cp ./artifacts/Crashtest_linux_amd64/Crashtest_linux_amd64 ./release/
-          cp ./artifacts/Crashtest_windows_amd64.exe/Crashtest_windows_amd64.exe ./release/
-          cp ./artifacts/Crashtest_darwin_universal.zip/Crashtest_darwin_universal.zip ./release/
+          # Use find to copy any files found within the artifacts subdirectories
+          find ./artifacts -type f -exec cp {} ./release/ \;
+          # Optional: list what was actually copied
+          echo "Prepared files for release:"
+          ls -l ./release
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ./release/*
           draft: false
-          prerelease: false
+          prerelease: false # Kept this as false based on earlier discussion
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
