@@ -6,7 +6,37 @@ on:
 permissions:
   contents: write
 jobs:
+  determine-platforms:
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.check-tag.outputs.platforms }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Determine platforms to build
+        id: check-tag
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          # Standard version tag builds all platforms
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "platforms=windows,darwin,linux" >> $GITHUB_OUTPUT
+          # Platform-specific tags
+          elif [[ "$TAG_NAME" =~ -win$ ]]; then
+            echo "platforms=windows" >> $GITHUB_OUTPUT
+          elif [[ "$TAG_NAME" =~ -mac$ ]]; then
+            echo "platforms=darwin" >> $GITHUB_OUTPUT
+          elif [[ "$TAG_NAME" =~ -linux$ ]]; then
+            echo "platforms=linux" >> $GITHUB_OUTPUT
+          else
+            # Default to all platforms for other tag formats
+            echo "platforms=windows,darwin,linux" >> $GITHUB_OUTPUT
+          fi
+
   build:
+    needs: determine-platforms
     strategy:
       matrix:
         include:
@@ -25,6 +55,7 @@ jobs:
             output_file: Crashtest_windows_amd64.exe
             build_args: ''
     runs-on: ${{ matrix.os }}
+    if: contains(needs.determine-platforms.outputs.platforms, matrix.platform)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
