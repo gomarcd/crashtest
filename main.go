@@ -30,11 +30,11 @@ func main() {
 			Assets: assets,
 		},
 		Windows: &windows.Options{
-		    WebviewIsTransparent: true,
-		    WindowIsTranslucent: false,
-		    DisableWindowIcon: false,
-		    Theme: windows.Dark,
-		    WindowDecorations: windows.None 
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  false,
+			DisableWindowIcon:    false,
+			Theme:                windows.Dark,
+			WindowDecorations: windows.None,
 		},
 		Mac: &mac.Options{
 		    TitleBar: &mac.TitleBar{
