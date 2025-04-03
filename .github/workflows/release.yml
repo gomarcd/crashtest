@@ -130,6 +130,7 @@ jobs:
             echo "Artifacts found:"
             find ./artifacts -type f
             echo "upload_files=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create GitHub Release
         if: steps.check_artifacts.outputs.upload_files == 'true'
