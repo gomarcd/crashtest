@@ -91,7 +91,7 @@ jobs:
 
       - name: Build wails
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
-        uses: dAppServer/wails-build-action@main
+        uses: dAppServer/wails-build-action@1ed9cb68d194cf664ce7603fdfa353f287fa981f
         id: build
         with:
           build-name: ${{ needs.determine-platforms.outputs.app_name }}
