@@ -137,9 +137,9 @@ jobs:
         run: |
           mkdir release_assets
           APP_NAME="${{ needs.determine-platforms.outputs.app_name }}"
-          find ./artifacts/*windows*/build/bin/ -name "$APP_NAME.exe" -exec cp {} ./release_assets/ \;
-          find ./artifacts/*linux*/build/bin/ -maxdepth 1 -type f -name "$APP_NAME" -exec cp {} ./release_assets/ \;
-          find ./artifacts/*darwin*/build/bin/ -name "$APP_NAME.app.zip" -exec cp {} ./release_assets/ \;
+          cp ./artifacts/*windows*/"$APP_NAME.exe" ./release_assets/ 2>/dev/null || true
+          cp ./artifacts/*linux*/"$APP_NAME" ./release_assets/ 2>/dev/null || true
+          cp ./artifacts/*darwin*/"$APP_NAME.app.zip" ./release_assets/ 2>/dev/null || true
           echo "Prepared release assets:"
           ls -l release_assets
 
