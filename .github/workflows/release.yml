@@ -46,7 +46,11 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+          # Create symbolic link for pkg-config if using 4.1
+          if [ -f /usr/lib/pkgconfig/webkit2gtk-4.1.pc ] && [ ! -f /usr/lib/pkgconfig/webkit2gtk-4.0.pc ]; then
+            sudo ln -s /usr/lib/pkgconfig/webkit2gtk-4.1.pc /usr/lib/pkgconfig/webkit2gtk-4.0.pc
+          fi
 
       - name: Install Wails
         run: |
@@ -82,7 +86,7 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o Crashtest
+          wails build -o Crashtest -tags webkit2_41
           ls -la build/bin
           mv build/bin/Crashtest "build/bin/${{ matrix.artifact_name }}"
           ls -la build/bin
