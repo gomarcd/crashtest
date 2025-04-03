@@ -94,19 +94,39 @@ jobs:
         uses: dAppServer/wails-build-action@1ed9cb68d194cf664ce7603fdfa353f287fa981f
         id: build
         with:
-          build-name: ${{ needs.determine-platforms.outputs.app_name }}
+          build-name: ${{ needs.determine-platforms.outputs.app_name }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
           build-platform: ${{ matrix.platform }}
           package: false
           go-version: '1.23'
+
+      - name: Prepare artifact for upload
+        if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
+        shell: bash
+        run: |
+          APP_NAME="${{ needs.determine-platforms.outputs.app_name }}"
+          STAGING_DIR="upload_staging"
+          SOURCE_DIR="build/bin"
+          mkdir "$STAGING_DIR"
+          echo "Preparing artifact from $SOURCE_DIR for ${{ matrix.os }}"
+          ls -l "$SOURCE_DIR"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "$SOURCE_DIR/$APP_NAME.exe" "$STAGING_DIR/"
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            cp "$SOURCE_DIR/$APP_NAME.app.zip" "$STAGING_DIR/"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            cp "$SOURCE_DIR/$APP_NAME" "$STAGING_DIR/"
+          fi
+          echo "Prepared artifact:"
+          ls -l "$STAGING_DIR"
 
       - name: Upload build artifact
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.artifact-suffix }}
-          path: build/bin/
+          path: ./upload_staging/
           retention-days: 1
-          if-no-files-found: warn
+          if-no-files-found: error
 
   release:
     needs: [determine-platforms, build]
@@ -132,23 +152,12 @@ jobs:
             echo "upload_files=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Prepare release assets
-        if: steps.check_artifacts.outputs.upload_files == 'true'
-        run: |
-          mkdir release_assets
-          APP_NAME="${{ needs.determine-platforms.outputs.app_name }}"
-          cp ./artifacts/*windows*/"$APP_NAME.exe" ./release_assets/ 2>/dev/null || true
-          cp ./artifacts/*linux*/"$APP_NAME" ./release_assets/ 2>/dev/null || true
-          cp ./artifacts/*darwin*/"$APP_NAME.app.zip" ./release_assets/ 2>/dev/null || true
-          echo "Prepared release assets:"
-          ls -l release_assets
-
       - name: Create GitHub Release
         if: steps.check_artifacts.outputs.upload_files == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.determine-platforms.outputs.tag_name }}
-          files: ./release_assets/*
+          files: ./artifacts/*/*
           draft: false
           prerelease: ${{ needs.determine-platforms.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
