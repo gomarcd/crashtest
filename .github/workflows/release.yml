@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload build artifact
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
           path: ${{ steps.build.outputs.BUILD_PATH }}
@@ -113,7 +113,7 @@ jobs:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           path: ./artifacts
 
