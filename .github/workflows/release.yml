@@ -86,9 +86,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Clear runner cache
-        run: sudo rm -rf /home/runner/work/_actions/_temp
-
       - name: Build wails
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: dAppServer/wails-build-action@main
