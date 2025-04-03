@@ -73,12 +73,15 @@ jobs:
           - platform: windows/amd64
             os: windows-latest
             build-flag: build-windows
+            artifact-suffix: windows-amd64
           - platform: darwin/universal
             os: macos-latest
             build-flag: build-darwin
+            artifact-suffix: darwin-universal
           - platform: linux/amd64
             os: ubuntu-latest
             build-flag: build-linux
+            artifact-suffix: linux-amd64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -100,7 +103,7 @@ jobs:
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
+          name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.artifact-suffix }}
           path: build/bin/
           retention-days: 1
           if-no-files-found: warn
@@ -121,11 +124,11 @@ jobs:
         id: check_artifacts
         run: |
           if [ -z "$(find ./artifacts -type f)" ]; then
-            echo "No artifacts found to release."
+            echo "::warning::No artifacts found to release. This might happen if all build jobs failed or were skipped."
             echo "upload_files=false" >> $GITHUB_OUTPUT
           else
             echo "Artifacts found:"
-            find ./artifacts -type f
+            find ./artifacts -ls
             echo "upload_files=true" >> $GITHUB_OUTPUT
           fi
 
