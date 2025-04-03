@@ -63,9 +63,9 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o Crashtest
+          wails build -o APIClient
           dir build\bin
-          Copy-Item -Path "build\bin\Crashtest.exe" -Destination "build\bin\${{ matrix.artifact_name }}"
+          Copy-Item -Path "build\bin\APIClient.exe" -Destination "build\bin\${{ matrix.artifact_name }}"
           dir build\bin
 
       - name: Build macOS
@@ -95,7 +95,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build/bin/${{ matrix.artifact_name }}
+          path: |
+            build/bin/${{ matrix.artifact_name }}
           retention-days: 1
 
   release:
@@ -105,16 +106,22 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-
+          path: ./artifacts
+          
       - name: List artifacts
-        run: find artifacts -type f | sort
+        run: find ./artifacts -type f | sort
+        
+      - name: Prepare artifacts for release
+        run: |
+          mkdir -p ./release
+          cp ./artifacts/Crashtest_linux_amd64/Crashtest_linux_amd64 ./release/
+          cp ./artifacts/Crashtest_windows_amd64.exe/Crashtest_windows_amd64.exe ./release/
+          cp ./artifacts/Crashtest_darwin_universal.zip/Crashtest_darwin_universal.zip ./release/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/**/*
+          files: ./release/*
           draft: false
           prerelease: true
           generate_release_notes: true
