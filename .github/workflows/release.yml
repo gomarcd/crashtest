@@ -46,11 +46,7 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
-          # Create symbolic link for pkg-config if using 4.1
-          if [ -f /usr/lib/pkgconfig/webkit2gtk-4.1.pc ] && [ ! -f /usr/lib/pkgconfig/webkit2gtk-4.0.pc ]; then
-            sudo ln -s /usr/lib/pkgconfig/webkit2gtk-4.1.pc /usr/lib/pkgconfig/webkit2gtk-4.0.pc
-          fi
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
       - name: Install Wails
         run: |
@@ -63,9 +59,16 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o crashtest
+          # Update wails.json for correct output name
+          $wailsConfig = Get-Content -Raw -Path wails.json | ConvertFrom-Json
+          $wailsConfig.name = "Crashtest"
+          $wailsConfig.outputfilename = "Crashtest"
+          $wailsConfig | ConvertTo-Json | Set-Content -Path wails.json
+          
+          wails build
           dir build\bin
-          Copy-Item -Path "build\bin\crashtest.exe" -Destination "build\bin\${{ matrix.artifact_name }}"
+          $exePath = Get-ChildItem -Path "build\bin" | Where-Object { $_.Name -like "*.exe" -or $_.Name -eq "crashtest" } | Select-Object -ExpandProperty FullName
+          Copy-Item -Path $exePath -Destination "build\bin\${{ matrix.artifact_name }}"
           dir build\bin
 
       - name: Build macOS
@@ -74,10 +77,15 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o crashtest -platform darwin/universal
+          # Update wails.json for correct output name
+          cat wails.json | jq '.name = "Crashtest" | .outputfilename = "Crashtest"' > wails.json.tmp
+          mv wails.json.tmp wails.json
+          cat wails.json
+          
+          wails build -platform darwin/universal
           cd build/bin
           ls -la
-          zip -r "${{ matrix.artifact_name }}" crashtest.app
+          zip -r "${{ matrix.artifact_name }}" Crashtest.app
           ls -la
 
       - name: Build Linux
@@ -86,7 +94,12 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o Crashtest -tags webkit2_41
+          # Update wails.json for correct output name
+          cat wails.json | jq '.name = "Crashtest" | .outputfilename = "Crashtest"' > wails.json.tmp
+          mv wails.json.tmp wails.json
+          cat wails.json
+          
+          wails build -tags webkit2_41
           ls -la build/bin
           mv build/bin/Crashtest "build/bin/${{ matrix.artifact_name }}"
           ls -la build/bin
