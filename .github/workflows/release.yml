@@ -94,14 +94,14 @@ jobs:
           build-name: ${{ needs.determine-platforms.outputs.app_name }}
           build-platform: ${{ matrix.platform }}
           package: false
-          go-version-file: go.mod
+          go-version: '1.23'
 
       - name: Upload build artifact
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
-          path: ${{ steps.build.outputs.BUILD_PATH }}
+          path: build/bin/
           retention-days: 1
           if-no-files-found: warn
 
