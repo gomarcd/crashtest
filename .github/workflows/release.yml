@@ -93,17 +93,15 @@ jobs:
         with:
           build-name: ${{ needs.determine-platforms.outputs.app_name }}
           build-platform: ${{ matrix.platform }}
-          package: true
+          package: false
           go-version-file: go.mod
-        env:
-          BUILD_PATH: build/${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
 
       - name: Upload build artifact
         if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
-          path: build/${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
+          path: ${{ steps.build.outputs.BUILD_PATH }}
           retention-days: 1
           if-no-files-found: warn
 
@@ -129,7 +127,6 @@ jobs:
             echo "Artifacts found:"
             find ./artifacts -type f
             echo "upload_files=true" >> $GITHUB_OUTPUT
-          fi
 
       - name: Create GitHub Release
         if: steps.check_artifacts.outputs.upload_files == 'true'
