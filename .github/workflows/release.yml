@@ -63,9 +63,9 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o APIClient
+          wails build -o crashtest
           dir build\bin
-          Copy-Item -Path "build\bin\APIClient.exe" -Destination "build\bin\${{ matrix.artifact_name }}"
+          Copy-Item -Path "build\bin\crashtest.exe" -Destination "build\bin\${{ matrix.artifact_name }}"
           dir build\bin
 
       - name: Build macOS
@@ -74,10 +74,10 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o APIClient -platform darwin/universal
+          wails build -o crashtest -platform darwin/universal
           cd build/bin
           ls -la
-          zip -r "${{ matrix.artifact_name }}" APIClient.app
+          zip -r "${{ matrix.artifact_name }}" crashtest.app
           ls -la
 
       - name: Build Linux
