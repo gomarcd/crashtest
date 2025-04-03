@@ -20,13 +20,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Extract app name
         id: extract-app-info
         run: |
           APP_NAME=$(grep -m 1 '"name"' wails.json | cut -d '"' -f 4)
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-          
+
       - name: Determine platforms and release type
         id: check-tag
         run: |
@@ -38,10 +38,8 @@ jobs:
           BUILD_DARWIN="true"
           BUILD_LINUX="true"
 
-          # Standard semantic version tag builds all platforms, not a prerelease
           if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             IS_PRERELEASE="false"
-          # Platform-specific tags build only that platform, marked as prerelease
           elif [[ "$TAG_NAME" =~ -win$ ]]; then
             BUILD_WINDOWS="true"
             BUILD_DARWIN="false"
@@ -57,7 +55,6 @@ jobs:
             BUILD_DARWIN="false"
             BUILD_LINUX="true"
             IS_PRERELEASE="true"
-          # Any other tag containing a hyphen or alpha/beta/rc is a prerelease, builds all
           elif [[ "$TAG_NAME" =~ (-|alpha|beta|rc) ]]; then
             IS_PRERELEASE="true"
           fi
@@ -83,7 +80,6 @@ jobs:
             os: ubuntu-latest
             build-flag: build-linux
     runs-on: ${{ matrix.os }}
-    if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,6 +87,7 @@ jobs:
           submodules: recursive
 
       - name: Build wails
+        if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: dAppServer/wails-build-action@v2.2
         id: build
         with:
@@ -100,11 +97,13 @@ jobs:
           go-version-file: go.mod
 
       - name: Upload build artifact
+        if: ${{ needs.determine-platforms.outputs[matrix.build-flag] == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.determine-platforms.outputs.app_name }}-${{ matrix.platform }}
           path: ${{ steps.build.outputs.BUILD_PATH }}
           retention-days: 1
+          if-no-files-found: warn
 
   release:
     needs: [determine-platforms, build]
