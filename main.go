@@ -29,13 +29,20 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		Windows: &windows.Options{
-			WebviewIsTransparent: true,
-			WindowIsTranslucent:  true,
-			DisableWindowIcon:    false,
-			Theme:                windows.Dark,
-		},
-		Frameless: true,
+	    Windows: &windows.Options{
+	        Theme: windows.Dark,
+	        CustomTheme: &windows.ThemeSettings{
+	             DarkModeTitleBar:   windows.RGB(30, 30, 37),
+	             DarkModeTitleText:  windows.RGB(200, 200, 200),
+	             DarkModeBorder:     windows.RGB(30, 30, 37),
+	             LightModeTitleBar:  windows.RGB(240, 240, 240),
+	             LightModeTitleText: windows.RGB(20, 20, 20),
+	             LightModeBorder:    windows.RGB(240, 240, 240),
+	             DarkModeTitleBarInactive:   windows.RGB(30, 30, 37),
+	             DarkModeTitleTextInactive:  windows.RGB(128, 128, 128),
+	             DarkModeBorderInactive:     windows.RGB(30, 30, 37),
+	        },
+	    },
 		Mac: &mac.Options{
 		    TitleBar: &mac.TitleBar{
 		        TitlebarAppearsTransparent: true,
