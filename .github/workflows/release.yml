@@ -74,10 +74,10 @@ jobs:
           cd frontend
           npm install
           cd ..
-          wails build -o Crashtest -platform darwin/universal
+          wails build -o APIClient -platform darwin/universal
           cd build/bin
           ls -la
-          zip -r "${{ matrix.artifact_name }}" Crashtest.app
+          zip -r "${{ matrix.artifact_name }}" APIClient.app
           ls -la
 
       - name: Build Linux
