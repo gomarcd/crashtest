@@ -28,7 +28,7 @@ jobs:
             platform: windows
             artifact_name: Crashtest_windows_amd64.exe
             output_path: build/bin/Crashtest_windows_amd64.exe
-            build_args: '' 
+            build_args: ''
 
     runs-on: ${{ matrix.os }}
 
@@ -36,7 +36,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -67,36 +67,26 @@ jobs:
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
       - name: Build Application
-        shell: bash 
+        shell: bash
         run: |
-          # Ensure build directory exists
           mkdir -p build/bin
-
-          # Common build command prefix
           BUILD_CMD="wails build -trimpath ${{ matrix.build_args }}"
-
-          # Platform-specific build execution & output handling
           if [[ "${{ matrix.platform }}" == "linux" ]]; then
             $BUILD_CMD -o "${{ matrix.output_path }}"
           elif [[ "${{ matrix.platform }}" == "windows" ]]; then
-             # PowerShell needed for Windows paths? Or just use bash with corrected paths?
-             # Assuming wails build handles paths correctly in bash on Windows runner
-             # Use PowerShell explicitly if bash causes issues with path separators
-             pwsh -Command "wails build -trimpath -o '${{ matrix.output_path }}'"
-             # Alternatively, try bash directly:
-             # $BUILD_CMD -o "${{ matrix.output_path }}"
+             pwsh -Command "$BUILD_CMD -o '${{ matrix.output_path }}'"
           elif [[ "${{ matrix.platform }}" == "darwin" ]]; then
-            # Build the .app bundle (assuming default name 'Crashtest.app' in wails.json)
             $BUILD_CMD
-            # Navigate and Zip the .app bundle
-            cd build/bin
-            zip -r "${{ matrix.artifact_name }}" Crashtest.app # Assumes wails.json outputfilename is Crashtest
-            # No need to move, zip creates the target artifact name directly
-            cd ../.. # Go back to root
+            APP_BUNDLE_PATH="build/bin/Crashtest.app"
+            TARGET_ZIP_PATH="${{ matrix.output_path }}"
+            if [ -d "$APP_BUNDLE_PATH" ]; then
+              cd build/bin
+              zip -r "${{ matrix.artifact_name }}" Crashtest.app
+              cd ../..
+            else
+              exit 1
+            fi
           fi
-
-          echo "Build finished. Artifact path: ${{ matrix.output_path }}"
-          ls -l build/bin # Verify artifact exists (optional debug)
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -117,23 +107,19 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: List downloaded artifacts (for debugging)
-        run: find ./artifacts -type f | sort
-
       - name: Prepare artifacts for release
         run: |
           mkdir -p ./release
-          # Copy files from the subdirectories created by download-artifact
-          find ./artifacts -type f -exec cp {} ./release/ \;
-          echo "Prepared files for release:"
-          ls -l ./release
+          cp ./artifacts/Crashtest_linux_amd64/Crashtest_linux_amd64 ./release/
+          cp ./artifacts/Crashtest_windows_amd64.exe/Crashtest_windows_amd64.exe ./release/
+          cp ./artifacts/Crashtest_darwin_universal.zip/Crashtest_darwin_universal.zip ./release/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ./release/*
           draft: false
-          prerelease: true
+          prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
