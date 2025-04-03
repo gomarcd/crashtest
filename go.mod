@@ -1,4 +1,4 @@
-module APIClient
+module Crashtest
 
 go 1.23
 

@@ -34,7 +34,7 @@ func main() {
 			WindowIsTranslucent:  false,
 			DisableWindowIcon:    false,
 			Theme:                windows.Dark,
-			WindowDecorations: windows.None,
+			DisableWindowDecorations: true,
 		},
 		Mac: &mac.Options{
 		    TitleBar: &mac.TitleBar{
