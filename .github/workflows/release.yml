@@ -132,12 +132,23 @@ jobs:
             echo "upload_files=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Prepare release assets
+        if: steps.check_artifacts.outputs.upload_files == 'true'
+        run: |
+          mkdir release_assets
+          APP_NAME="${{ needs.determine-platforms.outputs.app_name }}"
+          find ./artifacts/*windows*/build/bin/ -name "$APP_NAME.exe" -exec cp {} ./release_assets/ \;
+          find ./artifacts/*linux*/build/bin/ -maxdepth 1 -type f -name "$APP_NAME" -exec cp {} ./release_assets/ \;
+          find ./artifacts/*darwin*/build/bin/ -name "$APP_NAME.app.zip" -exec cp {} ./release_assets/ \;
+          echo "Prepared release assets:"
+          ls -l release_assets
+
       - name: Create GitHub Release
         if: steps.check_artifacts.outputs.upload_files == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.determine-platforms.outputs.tag_name }}
-          files: ./artifacts/**/*
+          files: ./release_assets/*
           draft: false
           prerelease: ${{ needs.determine-platforms.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
