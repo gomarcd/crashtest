@@ -13,14 +13,17 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             artifact_name: Crashtest_linux_amd64
+            output_path: Crashtest_linux_amd64
             build_args: '-tags webkit2_41'
           - os: macos-latest
             platform: darwin
             artifact_name: Crashtest_darwin_universal.zip
+            output_path: Crashtest_darwin_universal.zip
             build_args: '-platform darwin/universal'
           - os: windows-latest
             platform: windows
             artifact_name: Crashtest_windows_amd64.exe
+            output_path: Crashtest_windows_amd64.exe
             build_args: ''
     runs-on: ${{ matrix.os }}
     steps:
@@ -62,39 +65,32 @@ jobs:
         shell: bash
         run: |
           mkdir -p build/bin
-          cd build/bin
-          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.artifact_name }}
-          cd ../..
-
+          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.output_path }}
       - name: Build Application Darwin
         if: matrix.platform == 'darwin'
         shell: bash
         run: |
           mkdir -p build/bin
-          cd build/bin
           wails build -trimpath ${{ matrix.build_args }}
-          if [ -d Crashtest.app ]; then
+          if [ -d build/bin/Crashtest.app ]; then
+            cd build/bin
             zip -r ${{ matrix.artifact_name }} Crashtest.app
+            cd ../..
           else
             echo "Build output not found for Darwin"
             exit 1
           fi
-          cd ../..
-
       - name: Build Application Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path build/bin | Out-Null
-          Set-Location build/bin
-          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.artifact_name }}
-          Set-Location ../..
-
+          wails build -trimpath ${{ matrix.build_args }} -o ${{ matrix.output_path }}
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build/bin/${{ matrix.artifact_name }}
+          path: build/bin/${{ matrix.output_path }}
           retention-days: 1
 
   release:
@@ -107,13 +103,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-
       - name: Prepare artifacts for release
         run: |
           mkdir -p ./release
           cp -R ./artifacts/* ./release/
           ls -l ./release
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
