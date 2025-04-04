@@ -32,7 +32,7 @@ func main() {
 	    Windows: &windows.Options{
 	        Theme: windows.Dark,
 	        CustomTheme: &windows.ThemeSettings{
-	             DarkModeTitleBar:   windows.RGB(30, 30, 37),
+	             DarkModeTitleBar:   windows.RGB(18, 24, 38),
 	             DarkModeTitleText:  windows.RGB(200, 200, 200),
 	             DarkModeBorder:     windows.RGB(30, 30, 37),
 	             LightModeTitleBar:  windows.RGB(240, 240, 240),
