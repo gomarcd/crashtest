@@ -23,45 +23,37 @@
             --gray-200: #e5e7eb;
             --gray-100: #f3f4f6;
         }
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--dark-bg);
             color: white;
             line-height: 1.6;
         }
-        
         a {
             color: var(--primary);
             text-decoration: none;
         }
-        
         a:hover {
             text-decoration: underline;
         }
-        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 2rem;
         }
-        
         header {
             padding: 2rem 0;
         }
-        
         .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
         .logo {
             display: flex;
             align-items: center;
@@ -69,22 +61,18 @@
             font-size: 1.5rem;
             font-weight: 700;
         }
-        
         .nav-links {
             display: flex;
             gap: 2rem;
         }
-        
         .nav-links a {
             color: var(--gray-200);
             font-weight: 500;
         }
-        
         .hero {
             padding: 6rem 0;
             text-align: center;
         }
-        
         .hero h1 {
             font-size: 3.5rem;
             font-weight: 700;
@@ -93,7 +81,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
         .hero p {
             font-size: 1.25rem;
             color: var(--gray-200);
@@ -102,14 +89,12 @@
             margin-left: auto;
             margin-right: auto;
         }
-        
         .cta-buttons {
             display: flex;
             justify-content: center;
             gap: 1rem;
             margin-bottom: 3rem;
         }
-        
         .button {
             display: inline-block;
             padding: 0.75rem 1.5rem;
@@ -117,86 +102,70 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-        
         .primary-button {
             background-color: var(--primary);
             color: white;
         }
-        
         .primary-button:hover {
             background-color: var(--primary-dark);
             text-decoration: none;
         }
-        
         .secondary-button {
             background-color: var(--gray-700);
             color: white;
         }
-        
         .secondary-button:hover {
             background-color: var(--gray-800);
             text-decoration: none;
         }
-        
         .app-screenshot {
             max-width: 100%;
             border-radius: 0.5rem;
             box-shadow: none;
             border: none;
         }
-        
         .features {
             padding: 6rem 0;
             background-color: var(--gray-800);
         }
-        
         .section-title {
             text-align: center;
             margin-bottom: 3rem;
         }
-        
         .section-title h2 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
         }
-        
         .section-title p {
             color: var(--gray-200);
             max-width: 700px;
             margin-left: auto;
             margin-right: auto;
         }
-        
         .feature-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
         }
-        
         .feature-card {
             background-color: var(--gray-700);
             padding: 2rem;
             border-radius: 0.5rem;
             transition: transform 0.2s ease;
         }
-        
         .feature-card:hover {
             transform: translateY(-5px);
         }
-        
         .feature-card h3 {
             font-size: 1.25rem;
             margin-bottom: 1rem;
         }
-        
         .feature-card p {
             color: var(--gray-200);
         }
-        
         .download {
             padding: 6rem 0;
         }
-        
         .platform-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -204,7 +173,6 @@
             gap: 1rem;
             margin-top: 2rem;
         }
-        
         .platform-button {
             display: flex;
             align-items: center;
@@ -216,12 +184,10 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-        
         .platform-button:hover {
             background-color: var(--primary);
             text-decoration: none;
         }
-        
         .platform-button img {
             width: 36px;
             height: 36px;
@@ -243,38 +209,80 @@
             align-items: center;
             background-color: var(--gray-800);
         }
-        
         .footer-links {
             display: flex;
             justify-content: center;
             gap: 2rem;
             margin-bottom: 2rem;
         }
-        
         .footer-links a {
             color: var(--gray-200);
         }
-        
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2.5rem;
             }
-            
             .cta-buttons {
                 flex-direction: column;
                 align-items: center;
             }
-            
             .button {
                 width: 100%;
                 max-width: 300px;
                 text-align: center;
             }
-            
             .feature-grid {
                 grid-template-columns: 1fr;
             }
+            .navbar {
+                position: relative;
+            }
+            .nav-links {
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                background-color: var(--gray-800);
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                display: none;
+                z-index: 100;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .menu-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+            .hero, .features, .download {
+                padding: 3rem 0;
+            }
+            .platform-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .platform-button {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+            footer [style*="font-size: 36px"] {
+                font-size: 28px !important;
+            }
+            
+            footer [style*="gap: 48px"] {
+                gap: 32px !important;
+            }
         }
+        .menu-toggle {
+            display: none;
+        }        
     </style>
 </head>
 <body>
@@ -287,6 +295,9 @@
                         <span style="color: white; font-size: 1.5rem; font-weight: 700;">Crashtest</span>
                     </div>
                 </a>
+                <button class="menu-toggle" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="nav-links">
                     <a href="#features">Features</a>
                     <a href="#download">Download</a>
@@ -381,5 +392,28 @@
             </div>
         </div>
     </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        
+        menuToggle.addEventListener('click', function() {
+            navLinks.classList.toggle('active');
+        });
+        
+        document.addEventListener('click', function(event) {
+            if (!navLinks.contains(event.target) && !menuToggle.contains(event.target)) {
+                navLinks.classList.remove('active');
+            }
+        });
+        
+        const links = navLinks.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', function() {
+                navLinks.classList.remove('active');
+            });
+        });
+    });
+</script>
 </body>
 </html>
