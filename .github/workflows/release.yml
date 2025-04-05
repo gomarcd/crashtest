@@ -36,15 +36,6 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
-      - name: Setup Go from go.mod
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          check-latest: true
-
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@54438a764404fccf8a7348972974a1e2d7b50994
-
       - name: Copy gon config into expected path
         if: runner.os == 'macOS'
         run: |
@@ -60,7 +51,9 @@ jobs:
           package: false
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ secrets.APPLE_CERTIFICATE != '' || secrets.WINDOWS_CERTIFICATE_DATA != '' }}
-          wails-dev-build: 'true'
+          wails-version: 2.10.1
+          go-version: 1.23
+          wails-dev-build: 'false'
           sign-macos-app-id: com.example.crashtest
           sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
