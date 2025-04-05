@@ -6,7 +6,6 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
 
 jobs:
   release:
@@ -50,6 +49,7 @@ jobs:
           build-name: ${{ secrets.APP_NAME }}
           build-platform: ${{ matrix.platform }}
           package: false
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
           go-version: '1.23'
@@ -65,16 +65,16 @@ jobs:
         run: |
           mkdir -p release
           if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
-            cp build/bin/Crashtest.app.zip release/Crashtest_${{ env.VERSION }}_universal.zip
-            if [ -f build/bin/Crashtest.dmg ]; then
-              cp build/bin/Crashtest.dmg release/Crashtest_${{ env.VERSION }}_universal.dmg
+            cp build/bin/${{ secrets.APP_NAME }}.app.zip release/${{ secrets.APP_NAME }}${{ env.VERSION }}_universal.zip
+            if [ -f build/bin/${{ secrets.APP_NAME }}.dmg ]; then
+              cp build/bin/${{ secrets.APP_NAME }}.dmg release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_universal.dmg
             fi
           elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
-            cp build/bin/Crashtest release/Crashtest_${{ env.VERSION }}_amd64
+            cp build/bin/${{ secrets.APP_NAME }} release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64
           elif [[ "${{ matrix.platform }}" == "windows/amd64" ]]; then
-            cp build/bin/Crashtest.exe release/Crashtest_${{ env.VERSION }}_amd64.exe
+            cp build/bin/${{ secrets.APP_NAME }}.exe release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe
             if ls build/bin/*-amd64-installer.exe 1> /dev/null 2>&1; then
-              cp build/bin/*-amd64-installer.exe release/Crashtest_${{ env.VERSION }}_amd64_installer.exe
+              cp build/bin/*-amd64-installer.exe release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe
             fi
           fi
           cd release
