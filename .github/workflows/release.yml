@@ -79,6 +79,8 @@ jobs:
           sign-macos-app-id: ${{ secrets.BUNDLE_ID }}
           sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign-macos-installer-cert: ${{ secrets.APPLE_CERTIFICATE }}
+          sign-macos-installer-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
           sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
