@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           echo "APPLE_DEVELOPER_ID_CERT length: ${#APPLE_DEVELOPER_ID_CERT}"
-          echo "APPLE_DEVELOPER_ID_CERT snippet: ${APPLE_DEVELOPER_ID_CERT:0:50}"
+          echo "APPLE_DEVELOPER_ID_CERT snippet: ${APPLE_DEVELOPER_ID_CERT:0:100}"
         env:
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
 
