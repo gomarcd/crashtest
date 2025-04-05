@@ -98,6 +98,14 @@ jobs:
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
           sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        continue-on-error: true
+
+      - name: List Code Signing Identities
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          echo "Listing code signing identities:"
+          security find-identity -v -p codesigning
 
       - name: Prepare release artifacts
         shell: bash
