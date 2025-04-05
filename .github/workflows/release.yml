@@ -42,6 +42,9 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@54438a764404fccf8a7348972974a1e2d7b50994
+
       - name: Copy gon config into expected path
         if: runner.os == 'macOS'
         run: |
