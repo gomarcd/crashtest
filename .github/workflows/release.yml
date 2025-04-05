@@ -46,6 +46,8 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
+
+      ###################################### TEMPORARY DEBUGGING
       - name: Verify APPLE_CERTIFICATE is set
         shell: bash
         run: |
@@ -58,6 +60,12 @@ jobs:
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
 
+      - name: Debug certificate snippet
+        shell: bash
+        run: echo "${APPLE_CERTIFICATE:0:50}"
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      ###################################### TEMPORARY DEBUGGING
 
       - name: Wails Build
         uses: dAppServer/wails-build-action@1ed9cb68d194cf664ce7603fdfa353f287fa981f
