@@ -50,7 +50,7 @@ jobs:
           build-platform: ${{ matrix.platform }}
           package: false
           nsis: ${{ matrix.os == 'windows-latest' }}
-          sign: ${{ secrets.APPLE_CERTIFICATE != '' || secrets.WINDOWS_CERTIFICATE_DATA != '' }}
+          sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
           go-version: '1.23'
           sign-macos-app-id: ${{ secrets.BUNDLE_ID }}
           sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
@@ -60,6 +60,7 @@ jobs:
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
       - name: Prepare release artifacts
+        shell: bash
         run: |
           mkdir -p release
           if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
