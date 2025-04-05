@@ -65,6 +65,15 @@ jobs:
         run: echo "${APPLE_CERTIFICATE:0:50}"
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+
+      - name: Debug APPLE_DEVELOPER_ID_CERT
+        shell: bash
+        run: |
+          echo "APPLE_DEVELOPER_ID_CERT length: ${#APPLE_DEVELOPER_ID_CERT}"
+          echo "APPLE_DEVELOPER_ID_CERT snippet: ${APPLE_DEVELOPER_ID_CERT:0:50}"
+        env:
+          APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+
       ###################################### TEMPORARY DEBUGGING
 
       - name: Wails Build
