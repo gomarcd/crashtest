@@ -6,6 +6,7 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
+  p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
 
 jobs:
   release:
