@@ -1,0 +1,15 @@
+{
+  "source": ["./build/bin/@env:APP_NAME.app"],
+  "bundle_id": "@env:BUNDLE_ID",
+  "apple_id": {
+    "username": "@env:APPLE_ID_USER",
+    "password": "@env:APPLE_ID_PASS"
+  },
+  "sign": {
+    "application_identity": "@env:APPLE_DEVELOPER_ID_CERT"
+  },
+  "dmg" :{
+    "output_path":  "./build/bin/@env:APP_NAME.dmg",
+    "volume_name":  "@env:APP_NAME"
+  }
+}

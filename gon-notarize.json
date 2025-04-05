@@ -1,0 +1,15 @@
+{
+  "notarize": [{
+    "path": "./build/bin/@env:APP_NAME.dmg",
+    "bundle_id": "@env:BUNDLE_ID",
+    "staple": true
+  },{
+    "path": "./build/bin/@env:APP_NAME.app.zip",
+    "bundle_id": "@env:BUNDLE_ID",
+    "staple": false
+  }],
+  "apple_id": {
+    "username": "@env:APPLE_ID_USER",
+    "password": "@env:APPLE_ID_PASS"
+  }
+}
