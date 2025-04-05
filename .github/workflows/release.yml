@@ -84,6 +84,12 @@ jobs:
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
           sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        env:
+          APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+          APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
 
       - name: Prepare release artifacts
         shell: bash
