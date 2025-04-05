@@ -51,8 +51,8 @@ jobs:
           package: false
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ secrets.APPLE_CERTIFICATE != '' || secrets.WINDOWS_CERTIFICATE_DATA != '' }}
-          wails-version: 2.10.1
-          go-version: 1.23
+          wails-version: '2.10.1'
+          go-version: '1.23'
           sign-macos-app-id: com.example.crashtest
           sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
