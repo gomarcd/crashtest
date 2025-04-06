@@ -175,21 +175,28 @@ jobs:
           cd ..
 
       - name: Import GPG key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         shell: bash
         run: |
-          echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
-          gpg_exit_code=$?
-          if [[ $gpg_exit_code -ne 0 ]]; then
-            echo "GPG key import failed with exit code $gpg_exit_code"
-            exit $gpg_exit_code
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "GPG_PRIVATE_KEY environment variable is not set or is empty. Skipping GPG steps."
+            # Set an output or state if you need subsequent steps to know GPG was skipped
+            echo "gpg_skipped=true" >> $GITHUB_ENV 
+          else
+            echo "GPG_PRIVATE_KEY is set. Attempting import..."
+            echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+            gpg_exit_code=$?
+            if [[ $gpg_exit_code -ne 0 ]]; then
+              echo "GPG key import failed with exit code $gpg_exit_code"
+              exit $gpg_exit_code
+            fi
+            echo "GPG key import successful."
+            echo "gpg_skipped=false" >> $GITHUB_ENV
           fi
-          echo "GPG key import successful."
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: GPG Sign Artifacts
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        if: env.gpg_skipped != 'true'
         shell: bash
         run: |
           cd release
