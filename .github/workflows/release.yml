@@ -64,7 +64,7 @@ jobs:
       - name: Install Gon
         if: runner.os == 'macOS'
         run: |
-          brew install --HEAD mitchellh/gon/gon
+          brew install --HEAD Bearer/tap/gon
           which gon
           gon --version
 
