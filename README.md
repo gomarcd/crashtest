@@ -27,15 +27,21 @@ Built in Golang with [Wails](https://wails.io).
 
 :white_check_mark: Code signing: macOS binaries are signed with official Apple certificate issued by Developer ID Certification Authority, Windows binaries will be code signed via Azure Trusted Signing pending its identity validation
 
-:white_check_mark: GPG signing: macOS, Windows and Linux binares are always GPG-signed with ed25519 key `A65E9AE2` (Fingerprint: `1353 E058 CB77 A738 F6AE  3362 883E 797A A65E 9AE2`), so you can verify the downloaded files are indeed from me. To verify with this method make sure you have GPG installed first. You can then download the pubkey from:
+:white_check_mark: GPG signing: macOS, Windows and Linux binares are always GPG-signed with ed25519 key `A65E9AE2` (Fingerprint: `1353 E058 CB77 A738 F6AE  3362 883E 797A A65E 9AE2`), so you can verify the downloaded files are indeed from me
+
+:white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to release notes for convenience
+
+### Verify GPG Signature
+
+Make sure you have GPG installed. You can then download our GPG pubkey to verify signatures via one of these methods:
 
 - Here in this repo by clicking `gpg-pubkey.asc` above or click [here](https://github.com/gomarcd/crashtest/blob/main/gpg-pubkey.asc) and then run `gpg --import gpg-pubkey.asc`
 - From Ubuntu keyserver with `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 1353E058CB77A738F6AE3362883E797AA65E9AE2` or by [clicking here](https://keyserver.ubuntu.com/pks/lookup?search=ci%40crashtest.app&fingerprint=on&op=index)
 - From openpgp.org with `gpg --keyserver hkps://keys.openpgp.org --recv-keys 1353E058CB77A738F6AE3362883E797AA65E9AE2` or by [clicking here](https://keys.openpgp.org/search?q=1353E058CB77A738F6AE3362883E797AA65E9AE2)
+- Download the release file (e.g., `Crashtest_2025.0.0.1_universal.dmg` or `.exe`) and its corresponding `.sig file` into the same directory.
 
-Verify GPG signature with:
+Once you have our pubkey and the files you want to verify:
 
-- Download the release file (e.g., Crashtest_2025.0.0.1_universal.dmg) and its corresponding .sig file (Crashtest_2025.0.0.1_universal.dmg.sig) into the same directory.
 - Run the following command in that directory ensuring filenames match what you downloaded: `gpg --verify Crashtest_2025.0.0.1_universal.dmg.sig Crashtest_2025.0.0.1_universal.dmg`, you should get output like this:
 
 ```
@@ -44,11 +50,15 @@ gpg:                using EDDSA key 1353E058CB77A738F6AE3362883E797AA65E9AE2
 gpg: Good signature from "Crashtest CI <ci@crashtest.app>" 
 ```
 
-:white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file
+The purpose of this step is to verify with cryptographic assurances that the downloaded file is in fact the intended one.
 
-- To verify manually (make sure filenames matche what you downloaded):
-    1. Calculate the checksum: `sha256sum Crashtest_2025.0.0.1_universal.dmg`
-    2. Display the expected checksum from the downloaded `.sha256` file: `cat Crashtest_2025.0.0.1_universal.dmg.sha256`
-    3. Compare the long hash string output by the first command to the hash string displayed by the second command. They must match exactly.
+### Verify SHA256 Checksums
 
-:white_check_mark: Reproducible builds with instructions are coming, stay tuned 
+- Download the corresponding `.sha256` file for the Crashtest version you downloaded and follow these steps being sure to update the commands to match your actual filenames:
+	1. Checks if the downloaded file matches the `.sha256` hash: `sha256sum -c Crashtest_2025.0.0.1_universal.dmg.sha256` - should output something like `Crashtest_2025.0.0.1_universal.dmg: OK`
+    2. Output the downloaded file's SHA256 checksum to verify manually: `sha256sum Crashtest_2025.0.0.1_universal.dmg` - should output something like `18d6399d63ffec7f7d53ce2b0fbb2b53b686dcd55cdecc4f87bcc98e3be0ba9b  Crashtest_2025.0.0.1_universal.dmg`
+    3. Output the checksum from the `.sha256` file: `cat Crashtest_2025.0.0.1_universal.dmg.sha256` - should match step 2 exactly.
+
+The purpose of this step is to provide cryptographic assurances that the contents of the downloaded file correspond and have not been tampered with.
+
+:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here.
