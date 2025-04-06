@@ -31,6 +31,8 @@ Built in Golang with [Wails](https://wails.io).
 
 :white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to release notes for convenience
 
+:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here.
+
 ### Verify GPG Signature
 
 Make sure you have GPG installed. You can then download our GPG pubkey to verify signatures via one of these methods:
@@ -60,5 +62,3 @@ The purpose of this step is to verify with cryptographic assurances that the dow
     3. Output the checksum from the `.sha256` file: `cat Crashtest_2025.0.0.1_universal.dmg.sha256` - should match step 2 exactly.
 
 The purpose of this step is to provide cryptographic assurances that the contents of the downloaded file correspond and have not been tampered with.
-
-:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here.
