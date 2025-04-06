@@ -10,6 +10,7 @@
   }],
   "apple_id": {
     "username": "$APPLE_ID_USER",
-    "password": "$APPLE_ID_PASS"
+    "password": "$APPLE_ID_PASS",
+    "provider": "$APPLE_TEAM_ID"
   }
 }
