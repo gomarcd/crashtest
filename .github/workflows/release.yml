@@ -230,6 +230,8 @@ jobs:
   update-index:
     needs: publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout landing-page branch
         uses: actions/checkout@v3
