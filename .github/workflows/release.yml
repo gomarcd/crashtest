@@ -89,8 +89,8 @@ jobs:
           Copy-Item "build/bin/${{ secrets.APP_NAME }}" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
           Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe"
           Set-Location release
-          Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Name)" } | Out-File -FilePath SHA256SUMS.txt -Encoding utf8
-          Get-ChildItem
+          $hashes = Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Name)" }
+          $hashes | Out-File -FilePath SHA256SUMS.txt -Encoding utf8
 
       - name: Prepare release artifacts for Mac/Linux
         if: runner.os != 'Windows'
