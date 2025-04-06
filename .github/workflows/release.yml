@@ -61,12 +61,16 @@ jobs:
           mkdir -p build
           cp ./appicon.png build/appicon.png
 
-      - name: Install Gon
-        if: runner.os == 'macOS'
+      - name: Install gon
         run: |
-          brew install Bearer/tap/gon
-          which gon
+          mkdir -p $HOME/.gon_bin
+          curl -Lo $HOME/.gon_bin/gon.zip https://github.com/Bearer/gon/releases/download/v0.0.37/gon_macos.zip
+          unzip -o $HOME/.gon_bin/gon.zip -d $HOME/.gon_bin
+          chmod +x $HOME/.gon_bin/gon
+          echo "$HOME/.gon_bin" >> $GITHUB_PATH
           gon --version
+          mv $HOME/.gon_bin/gon $HOME/.gon_bin/gon-bearer
+          echo "alias gon=$HOME/.gon_bin/gon-bearer" >> $GITHUB_ENV
 
       - name: Wails Build
         uses: dAppServer/wails-build-action@main
