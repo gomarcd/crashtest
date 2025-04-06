@@ -8,24 +8,28 @@ env:
   NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
-  release:
+  build:
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: 'darwin/universal'
             os: 'macos-latest'
-            artifact-suffix: 'mac'
+            artifact_suffix: 'mac'
           - platform: 'linux/amd64'
             os: 'ubuntu-latest'
-            artifact-suffix: 'linux'
+            artifact_suffix: 'linux'
           - platform: 'windows/amd64'
             os: 'windows-latest'
-            artifact-suffix: 'windows'
+            artifact_suffix: 'windows'
 
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: write
+      contents: read
+
+    outputs:
+      release_version: ${{ steps.setup_vars.outputs.release_version }}
+      app_name: ${{ steps.setup_vars.outputs.app_name }}
 
     steps:
       - name: Checkout
@@ -34,6 +38,7 @@ jobs:
           submodules: recursive
 
       - name: Setup version variables
+        id: setup_vars
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -42,6 +47,11 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "RELEASE_YEAR=${YEAR}" >> $GITHUB_ENV
           echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "release_version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "app_name=${{ secrets.APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "Tag version: ${VERSION}"
+          echo "Release year: ${YEAR}"
+          echo "Full release version: ${RELEASE_VERSION}"
 
       - name: Prepare gon configuration
         if: runner.os == 'macOS'
@@ -92,72 +102,82 @@ jobs:
           echo "RELEASE_YEAR: $RELEASE_YEAR"
           echo "RELEASE_VERSION: $RELEASE_VERSION"
 
-      - name: Create release directory
-        shell: bash
-        run: mkdir -p release
+      - name: Archive build outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.artifact_suffix }}
+          path: build/bin/
+          if-no-files-found: error
 
-      - name: Copy built artifacts (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $releaseVersion = "${{ env.RELEASE_VERSION }}"
-          Write-Output "Using release version: $releaseVersion"
-          $exePath = "release/${{ secrets.APP_NAME }}_${releaseVersion}_amd64.exe"
-          $installerPath = "release/${{ secrets.APP_NAME }}_${releaseVersion}_amd64_installer.exe"
-          Write-Output "Creating artifacts at paths:"
-          Write-Output "  $exePath"
-          Write-Output "  $installerPath"
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}" $exePath -ErrorAction Stop
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" $installerPath -ErrorAction Stop
-          Get-ChildItem release
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-      - name: Copy built artifacts (Mac/Linux)
-        if: runner.os != 'Windows'
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+      APP_NAME: ${{ needs.build.outputs.app_name }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Prepare Release Files and Generate Body Checksums
+        id: prep_files
         shell: bash
         run: |
-          echo "Using release version: $RELEASE_VERSION"
-          if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
-            zipName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_universal.zip"
-            zipPath="release/$zipName"
-            echo "Creating Mac ZIP artifact: $zipPath"
-            cp build/bin/${{ secrets.APP_NAME }}.app.zip $zipPath
-            if [ -f build/bin/${{ secrets.APP_NAME }}.dmg ]; then
-              dmgName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_universal.dmg"
-              dmgPath="release/$dmgName"
-              echo "Creating Mac DMG artifact: $dmgPath"
-              cp build/bin/${{ secrets.APP_NAME }}.dmg $dmgPath
+          mkdir release
+          CHECKSUM_BODY_DATA="### Checksums\n\n| File | SHA256 |\n|---|---|\n"
+          if [ -d dist/dist-linux ]; then
+            if [ -f dist/dist-linux/${APP_NAME} ]; then
+              mv dist/dist-linux/${APP_NAME} release/${APP_NAME}_${RELEASE_VERSION}_amd64
+              CHECKSUM_BODY_DATA+=$(sha256sum release/${APP_NAME}_${RELEASE_VERSION}_amd64 | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
-          elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
-            binName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_amd64"
-            binPath="release/$binName"
-            echo "Creating Linux binary artifact: $binPath"
-            cp build/bin/${{ secrets.APP_NAME }} $binPath
           fi
+          if [ -d dist/dist-windows ]; then
+            if [ -f dist/dist-windows/${APP_NAME} ]; then
+              mv dist/dist-windows/${APP_NAME} release/${APP_NAME}_${RELEASE_VERSION}_amd64.exe
+              CHECKSUM_BODY_DATA+=$(sha256sum release/${APP_NAME}_${RELEASE_VERSION}_amd64.exe | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+            if [ -f dist/dist-windows/${APP_NAME}-amd64-installer.exe ]; then
+              mv dist/dist-windows/${APP_NAME}-amd64-installer.exe release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe
+              CHECKSUM_BODY_DATA+=$(sha256sum release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+          fi
+          if [ -d dist/dist-mac ]; then
+            if [ -f dist/dist-mac/${APP_NAME}.app.zip ]; then
+               mv dist/dist-mac/${APP_NAME}.app.zip release/${APP_NAME}_${RELEASE_VERSION}_universal.zip
+               CHECKSUM_BODY_DATA+=$(sha256sum release/${APP_NAME}_${RELEASE_VERSION}_universal.zip | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+             if [ -f dist/dist-mac/${APP_NAME}.dmg ]; then
+               mv dist/dist-mac/${APP_NAME}.dmg release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg
+               CHECKSUM_BODY_DATA+=$(sha256sum release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+          fi
+          echo "checksum_list<<EOF" >> $GITHUB_OUTPUT
+          echo -e "${CHECKSUM_BODY_DATA}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          ls -la release
 
-          ls -la release/
-
-      - name: Generate Checksums
+      - name: Generate Checksum Files
         shell: bash
         run: |
           cd release
           for file in *; do
-            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
-              sha256sum "$file" > "$file.sha256"
-            fi
+             if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+               sha256sum "$file" > "$file.sha256"
+             fi
           done
           cd ..
 
-      - name: Import GPG key (with check)
+      - name: Import GPG key
+        if: secrets.GPG_PRIVATE_KEY != ''
         shell: bash
         run: |
-          if [ -z "$GPG_PRIVATE_KEY" ]; then
-            echo "GPG_PRIVATE_KEY is not set or is empty"
-            exit 1
-          else
-            key_length=${#GPG_PRIVATE_KEY}
-            echo "GPG_PRIVATE_KEY is set (length: $key_length). Attempting import..."
-          fi
-
           echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
           gpg_exit_code=$?
           if [[ $gpg_exit_code -ne 0 ]]; then
@@ -168,28 +188,31 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: GPG sign each artifact
+      - name: GPG Sign Artifacts
+        if: secrets.GPG_PRIVATE_KEY != ''
         shell: bash
         run: |
-          for file in release/*; do
-            if [[ ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
               echo "Signing file: $file"
               gpg --batch --yes --detach-sign --output "$file.sig" "$file"
             fi
           done
+          cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ secrets.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
+          name: ${{ env.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: release/**
-          generate_release_notes: false
           body: |
-            [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/gomarcd/crashtest/commits/${{ github.ref_name }})
+            [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }})
 
-            For verification instructions, see [Security Documentation](https://github.com/gomarcd/crashtest/blob/main/README.md#security).
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            For verification instructions, see [Security Documentation](https://github.com/${{ github.repository }}/blob/main/README.md#security).
+
+            ---
+            ${{ steps.prep_files.outputs.checksum_list }}
