@@ -40,7 +40,7 @@ Make sure you have GPG installed. You can then download our GPG pubkey to verify
 - Here in this repo by clicking `gpg-pubkey.asc` above or click [here](https://github.com/gomarcd/crashtest/blob/main/gpg-pubkey.asc) and then run `gpg --import gpg-pubkey.asc`
 - From Ubuntu keyserver with `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 1353E058CB77A738F6AE3362883E797AA65E9AE2` or by [clicking here](https://keyserver.ubuntu.com/pks/lookup?search=ci%40crashtest.app&fingerprint=on&op=index)
 - From openpgp.org with `gpg --keyserver hkps://keys.openpgp.org --recv-keys 1353E058CB77A738F6AE3362883E797AA65E9AE2` or by [clicking here](https://keys.openpgp.org/search?q=1353E058CB77A738F6AE3362883E797AA65E9AE2)
-- Download the release file (e.g., `Crashtest_2025.0.0.1_universal.dmg` or `.exe`) and its corresponding `.sig file` into the same directory.
+- Download the release file (e.g., `Crashtest_2025.0.0.1_universal.dmg` or `.exe`) and its corresponding `.sig` file into the same directory.
 
 Once you have our pubkey and the files you want to verify:
 
