@@ -107,25 +107,29 @@ jobs:
           shasum -a 256 * > SHA256SUMS.txt
           ls -la
 
-      - name: Check if GPG secret is present
-        shell: pwsh
+      - name: Import GPG key (with check)
+        shell: bash
         run: |
-          if (-not $env:GPG_PRIVATE_KEY) {
-            Write-Host "GPG_PRIVATE_KEY is not set or is empty"
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "GPG_PRIVATE_KEY is not set or is empty"
             exit 1
-          } else {
-            Write-Host "GPG_PRIVATE_KEY is set (length: $($env:GPG_PRIVATE_KEY.Length))"
-          }
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          else
+            key_length=${#GPG_PRIVATE_KEY}
+            echo "GPG_PRIVATE_KEY is set (length: $key_length). Attempting import..."
+          fi
 
-
-      - name: Import GPG key
-        run: echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+          echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+          gpg_exit_code=$?
+          if [[ $gpg_exit_code -ne 0 ]]; then
+            echo "GPG key import failed with exit code $gpg_exit_code"
+            exit $gpg_exit_code
+          fi
+          echo "GPG key import successful."
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: GPG sign each artifact
+        shell: bash
         run: |
           for file in release/*; do
             gpg --batch --yes --detach-sign --output "$file.sig" "$file"
