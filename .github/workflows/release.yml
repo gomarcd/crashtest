@@ -108,15 +108,17 @@ jobs:
           ls -la
 
       - name: Check if GPG secret is present
+        shell: pwsh
         run: |
-          if [ -z "$GPG_PRIVATE_KEY" ]; then
-            echo "GPG_PRIVATE_KEY is not set"
+          if (-not $env:GPG_PRIVATE_KEY) {
+            Write-Host "GPG_PRIVATE_KEY is not set or is empty"
             exit 1
-          else
-            echo "GPG_PRIVATE_KEY is set (length: ${#GPG_PRIVATE_KEY})"
-          fi
+          } else {
+            Write-Host "GPG_PRIVATE_KEY is set (length: $($env:GPG_PRIVATE_KEY.Length))"
+          }
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
 
       - name: Import GPG key
         run: echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
