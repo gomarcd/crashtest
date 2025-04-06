@@ -227,30 +227,35 @@ jobs:
             ---
             ${{ steps.prep_files.outputs.checksum_list }}
 
-  update-index:
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout landing-page branch
-        uses: actions/checkout@v3
-        with:
-          ref: landing-page
-          fetch-depth: 0
+update-index:
+  needs: publish
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout landing-page branch
+      uses: actions/checkout@v3
+      with:
+        ref: landing-page
+        fetch-depth: 0
 
-      - name: Update download links in index.html
-        shell: bash
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
-          sed -i -E "s/(id=\"download-windows\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\2/g" landing-page/index.html
-          sed -i -E "s/(id=\"download-mac\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\2/g" landing-page/index.html
-          sed -i -E "s/(id=\"download-linux\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64\2/g" landing-page/index.html
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add landing-page/index.html
+    - name: Update download links in index.html
+      shell: bash
+      run: |
+        TAG="${GITHUB_REF_NAME}"
+        VERSION="${TAG#v}"
+        YEAR=$(date +%Y)
+        RELEASE_VERSION="${YEAR}.${VERSION}"
+        echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
+        sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
+        sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
+        sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64\"/g" landing-page/index.html
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add landing-page/index.html
+        if ! git diff --cached --quiet; then
           git commit -m "Update download links for release ${TAG}"
           git push origin landing-page
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+        else
+          echo "No changes to commit"
+        fi
+      env:
+        GITHUB_REF_NAME: ${{ github.ref_name }}
