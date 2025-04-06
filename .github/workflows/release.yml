@@ -149,16 +149,16 @@ jobs:
           fi
           if [ -d dist/dist-mac ]; then
             if [ -f "dist/dist-mac/${APP_NAME}.app.zip" ]; then
-               mv "dist/dist-mac/${APP_NAME}.app.zip" "release/${APP_NAME}_${RELEASE_VERSION}_universal.zip"
+              mv "dist/dist-mac/${APP_NAME}.app.zip" "release/${APP_NAME}_${RELEASE_VERSION}_universal.zip"
             fi
-             if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
-               mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
+            if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
+              mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
             fi
           fi
           pushd release > /dev/null
           for file in *; do
             if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
-               CHECKSUM_BODY_DATA+=$(sha256sum "$file" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+              CHECKSUM_BODY_DATA+=$(sha256sum "$file" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
           done
           popd > /dev/null
@@ -172,9 +172,9 @@ jobs:
         run: |
           cd release
           for file in *; do
-             if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
-               sha256sum "$file" > "$file.sha256"
-             fi
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
           done
           cd ..
 
@@ -226,3 +226,31 @@ jobs:
 
             ---
             ${{ steps.prep_files.outputs.checksum_list }}
+
+  update-index:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout landing-page branch
+        uses: actions/checkout@v3
+        with:
+          ref: landing-page
+          fetch-depth: 0
+
+      - name: Update download links in index.html
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
+          sed -i -E "s/(id=\"download-windows\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\2/g" landing-page/index.html
+          sed -i -E "s/(id=\"download-mac\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\2/g" landing-page/index.html
+          sed -i -E "s/(id=\"download-linux\" href=\")[^\"]*(\")/\1https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64\2/g" landing-page/index.html
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add landing-page/index.html
+          git commit -m "Update download links for release ${TAG}"
+          git push origin landing-page
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
