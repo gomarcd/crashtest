@@ -51,7 +51,6 @@ jobs:
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
           APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
@@ -80,6 +79,8 @@ jobs:
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
           sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        env:
+          AC_PROVIDER: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Prepare release artifacts
         shell: bash
