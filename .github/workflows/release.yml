@@ -86,33 +86,8 @@ jobs:
         shell: pwsh
         run: |
           mkdir -Force release
-          
-          # Debug - List build directory contents to find where the files are
-          Write-Host "Checking build directory structure:"
-          if (Test-Path -Path "build") {
-            Get-ChildItem -Path "build" -Recurse | Format-Table FullName
-          } else {
-            Write-Host "build directory not found"
-            Get-ChildItem -Path . -Directory | Format-Table Name
-          }
-          
-          # Try to find the executable using a more flexible approach
-          $exeFile = Get-ChildItem -Path . -Recurse -Filter "${{ secrets.APP_NAME }}.exe" | Select-Object -First 1
-          if ($exeFile) {
-            Write-Host "Found executable at: $($exeFile.FullName)"
-            Copy-Item $exeFile.FullName "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
-          } else {
-            Write-Host "ERROR: Executable not found"
-            exit 1
-          }
-          
-          # Try to find the installer
-          $installerFile = Get-ChildItem -Path . -Recurse -Filter "*-amd64-installer.exe" | Select-Object -First 1
-          if ($installerFile) {
-            Write-Host "Found installer at: $($installerFile.FullName)"
-            Copy-Item $installerFile.FullName "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe"
-          }
-          
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe"
           Set-Location release
           Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Name)" } | Out-File -FilePath SHA256SUMS.txt -Encoding utf8
           Get-ChildItem
