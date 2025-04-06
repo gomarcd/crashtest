@@ -1,3 +1,5 @@
+[![Release](https://github.com/gomarcd/crashtest/workflows/Release/badge.svg)](https://github.com/gomarcd/crashtest/actions/workflows/release.yml)
+
 # Crashtest
 
 A fast and lightweight cross-platform API client.
