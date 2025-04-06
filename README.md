@@ -4,6 +4,8 @@
 
 A fast and lightweight cross-platform API client.
 
+![Crashtest screenshot](screenshot.png)
+
 ## Features
 
 - Modern, minimal UI
