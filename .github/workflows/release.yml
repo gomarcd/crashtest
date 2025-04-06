@@ -175,7 +175,7 @@ jobs:
           cd ..
 
       - name: Import GPG key
-        if: secrets.GPG_PRIVATE_KEY != ''
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         shell: bash
         run: |
           echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
@@ -189,7 +189,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: GPG Sign Artifacts
-        if: secrets.GPG_PRIVATE_KEY != ''
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         shell: bash
         run: |
           cd release
