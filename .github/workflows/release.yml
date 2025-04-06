@@ -72,6 +72,7 @@ jobs:
           package: false
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
+          sign-macos-team-id: ${{ secrets.APPLE_TEAM_ID }}
           sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
           sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
