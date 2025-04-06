@@ -81,28 +81,28 @@ jobs:
           sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
           sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
-        - name: Prepare release artifacts
-          shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
-          run: |
-            ${{ runner.os == 'Windows' && 'mkdir -Force release' || 'mkdir -p release' }}
-            
-            ${{ runner.os == 'Windows' && 
-            'Copy-Item "build/bin/${{ secrets.APP_NAME }}.exe" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
-            Get-ChildItem "build/bin/*-amd64-installer.exe" -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe" }' 
-            ||
-            'if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
-              cp build/bin/${{ secrets.APP_NAME }}.app.zip release/${{ secrets.APP_NAME }}${{ env.VERSION }}_universal.zip
-              [ -f build/bin/${{ secrets.APP_NAME }}.dmg ] && cp build/bin/${{ secrets.APP_NAME }}.dmg release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_universal.dmg
-            elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
-              cp build/bin/${{ secrets.APP_NAME }} release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64
-            fi' }}
-            
-            ${{ runner.os == 'Windows' && 
-            'Set-Location release
-            Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Path.Split("/")[-1])" } | Out-File -FilePath SHA256SUMS.txt -Encoding utf8' 
-            || 
-            'cd release
-            shasum -a 256 * > SHA256SUMS.txt' }}
+      - name: Prepare release artifacts
+        shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        run: |
+          ${{ runner.os == 'Windows' && 'mkdir -Force release' || 'mkdir -p release' }}
+          
+          ${{ runner.os == 'Windows' && 
+          'Copy-Item "build/bin/${{ secrets.APP_NAME }}.exe" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
+          Get-ChildItem "build/bin/*-amd64-installer.exe" -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe" }' 
+          ||
+          'if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
+            cp build/bin/${{ secrets.APP_NAME }}.app.zip release/${{ secrets.APP_NAME }}${{ env.VERSION }}_universal.zip
+            [ -f build/bin/${{ secrets.APP_NAME }}.dmg ] && cp build/bin/${{ secrets.APP_NAME }}.dmg release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_universal.dmg
+          elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
+            cp build/bin/${{ secrets.APP_NAME }} release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64
+          fi' }}
+          
+          ${{ runner.os == 'Windows' && 
+          'Set-Location release
+          Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Path.Split("/")[-1])" } | Out-File -FilePath SHA256SUMS.txt -Encoding utf8' 
+          || 
+          'cd release
+          shasum -a 256 * > SHA256SUMS.txt' }}
 
       - name: Import GPG key
         run: echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
