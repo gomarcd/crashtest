@@ -68,7 +68,11 @@ jobs:
           unzip -o $HOME/.gon_bin/gon.zip -d $HOME/.gon_bin
           chmod +x $HOME/.gon_bin/gon
           echo "$HOME/.gon_bin" >> $GITHUB_PATH
-          gon --version
+
+          # Use the full path to call gon here
+          $HOME/.gon_bin/gon --version
+
+          # Rename and alias after confirming it works
           mv $HOME/.gon_bin/gon $HOME/.gon_bin/gon-bearer
           echo "alias gon=$HOME/.gon_bin/gon-bearer" >> $GITHUB_ENV
 
