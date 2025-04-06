@@ -36,22 +36,12 @@ jobs:
       - name: Setup version variables
         shell: bash
         run: |
-          # Extract version from tag
           VERSION="${GITHUB_REF_NAME#v}"
-          # Get current year
           YEAR=$(date +%Y)
-          # Create the release version string
           RELEASE_VERSION="${YEAR}.${VERSION}"
-          
-          # Export to GitHub env for other steps
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "RELEASE_YEAR=${YEAR}" >> $GITHUB_ENV
           echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-          
-          # Debug output
-          echo "Tag version: ${VERSION}"
-          echo "Release year: ${YEAR}"
-          echo "Full release version: ${RELEASE_VERSION}"
 
       - name: Prepare gon configuration
         if: runner.os == 'macOS'
@@ -68,7 +58,7 @@ jobs:
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
           APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}          
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Copy app icon
         shell: bash
@@ -102,69 +92,60 @@ jobs:
           echo "RELEASE_YEAR: $RELEASE_YEAR"
           echo "RELEASE_VERSION: $RELEASE_VERSION"
 
-      - name: Prepare release artifacts for Windows
+      - name: Create release directory
+        shell: bash
+        run: mkdir -p release
+
+      - name: Copy built artifacts (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $releaseVersion = "${{ env.RELEASE_VERSION }}"
           Write-Output "Using release version: $releaseVersion"
-          
-          mkdir -Force release
           $exePath = "release/${{ secrets.APP_NAME }}_${releaseVersion}_amd64.exe"
           $installerPath = "release/${{ secrets.APP_NAME }}_${releaseVersion}_amd64_installer.exe"
-          
           Write-Output "Creating artifacts at paths:"
           Write-Output "  $exePath"
           Write-Output "  $installerPath"
-          
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}" $exePath
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" $installerPath
-          
-          # Generate individual SHA256 files with correct format for verification
-          Get-FileHash -Algorithm SHA256 $exePath | ForEach-Object { "$($_.Hash)  $(Split-Path $exePath -Leaf)" } | Out-File -FilePath "$exePath.sha256" -Encoding utf8
-          Get-FileHash -Algorithm SHA256 $installerPath | ForEach-Object { "$($_.Hash)  $(Split-Path $installerPath -Leaf)" } | Out-File -FilePath "$installerPath.sha256" -Encoding utf8
-          
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}" $exePath -ErrorAction Stop
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" $installerPath -ErrorAction Stop
           Get-ChildItem release
 
-      - name: Prepare release artifacts for Mac/Linux
+      - name: Copy built artifacts (Mac/Linux)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           echo "Using release version: $RELEASE_VERSION"
-          mkdir -p release
-          
           if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
             zipName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_universal.zip"
             zipPath="release/$zipName"
             echo "Creating Mac ZIP artifact: $zipPath"
             cp build/bin/${{ secrets.APP_NAME }}.app.zip $zipPath
-            
-            pushd release
-            shasum -a 256 $zipName > "$zipName.sha256"
-            popd
-            
             if [ -f build/bin/${{ secrets.APP_NAME }}.dmg ]; then
               dmgName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_universal.dmg"
               dmgPath="release/$dmgName"
               echo "Creating Mac DMG artifact: $dmgPath"
               cp build/bin/${{ secrets.APP_NAME }}.dmg $dmgPath
-              
-              pushd release
-              shasum -a 256 $dmgName > "$dmgName.sha256"
-              popd
             fi
           elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
             binName="${{ secrets.APP_NAME }}_${RELEASE_VERSION}_amd64"
             binPath="release/$binName"
             echo "Creating Linux binary artifact: $binPath"
             cp build/bin/${{ secrets.APP_NAME }} $binPath
-            
-            pushd release
-            shasum -a 256 $binName > "$binName.sha256"
-            popd
           fi
-          
+
           ls -la release/
+
+      - name: Generate Checksums
+        shell: bash
+        run: |
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
+          done
+          cd ..
 
       - name: Import GPG key (with check)
         shell: bash
@@ -208,7 +189,7 @@ jobs:
           generate_release_notes: false
           body: |
             [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/gomarcd/crashtest/commits/${{ github.ref_name }})
-            
+
             For verification instructions, see [Security Documentation](https://github.com/gomarcd/crashtest/blob/main/README.md#security).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
