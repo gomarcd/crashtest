@@ -107,6 +107,17 @@ jobs:
           shasum -a 256 * > SHA256SUMS.txt
           ls -la
 
+      - name: Check if GPG secret is present
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "GPG_PRIVATE_KEY is not set"
+            exit 1
+          else
+            echo "GPG_PRIVATE_KEY is set (length: ${#GPG_PRIVATE_KEY})"
+          fi
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
       - name: Import GPG key
         run: echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
         env:
