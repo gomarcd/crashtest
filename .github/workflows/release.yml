@@ -61,6 +61,27 @@ jobs:
           mkdir -p build
           cp ./appicon.png build/appicon.png
 
+      - name: Fix create-dmg for Apple Silicon
+        if: runner.os == 'macOS'
+        run: |
+          # Install gon before the wails action does
+          brew install mitchellh/gon/gon
+          
+          # Find the create-dmg script used by gon
+          CREATE_DMG_PATH=$(find /opt/homebrew -name "create-dmg" -type f 2>/dev/null | grep -i gon)
+          
+          if [ -n "$CREATE_DMG_PATH" ]; then
+            echo "Found create-dmg at $CREATE_DMG_PATH"
+            # Create backup
+            cp "$CREATE_DMG_PATH" "${CREATE_DMG_PATH}.backup"
+            
+            # Remove the -openfolder argument from the bless command that's failing on Apple Silicon
+            sed -i '' 's/-openfolder.*"//g' "$CREATE_DMG_PATH"
+            echo "Modified create-dmg script to work on Apple Silicon"
+          else
+            echo "Warning: Could not find create-dmg script"
+          fi
+
       - name: Wails Build
         uses: dAppServer/wails-build-action@main
         with:
