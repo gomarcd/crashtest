@@ -61,42 +61,12 @@ jobs:
           mkdir -p build
           cp ./appicon.png build/appicon.png
 
-      - name: Fix create-dmg for Apple Silicon
+      - name: Install Gon
         if: runner.os == 'macOS'
         run: |
-          # Install gon the same way the action does
-          brew install mitchellh/gon/gon
-          
-          # Find the create-dmg script inside the Homebrew installation
-          CREATE_DMG_PATH=$(find /opt/homebrew -path "*/create-dmg.tmp.*" -type f 2>/dev/null || echo "")
-          if [ -z "$CREATE_DMG_PATH" ]; then
-            CREATE_DMG_PATH=$(find /opt/homebrew -name "create-dmg" -type f 2>/dev/null | head -n 1)
-          fi
-          
-          if [ -n "$CREATE_DMG_PATH" ]; then
-            echo "Found create-dmg at $CREATE_DMG_PATH"
-            # Create backup
-            cp "$CREATE_DMG_PATH" "${CREATE_DMG_PATH}.backup"
-            
-            # Modify the script to remove the -openfolder flag from bless command
-            sed -i '' 's/bless --folder.*openfolder/bless --folder/g' "$CREATE_DMG_PATH"
-            echo "Modified create-dmg script to remove -openfolder flag for Apple Silicon compatibility"
-            
-            # Also modify any other embedded scripts
-            SCRIPTS_DIR=$(dirname "$CREATE_DMG_PATH")
-            if [ -d "$SCRIPTS_DIR" ]; then
-              echo "Checking for other scripts in $SCRIPTS_DIR"
-              for script in "$SCRIPTS_DIR"/*; do
-                if grep -q "bless.*openfolder" "$script" 2>/dev/null; then
-                  echo "Modifying $script"
-                  cp "$script" "${script}.backup"
-                  sed -i '' 's/bless --folder.*openfolder/bless --folder/g' "$script"
-                fi
-              done
-            fi
-          else
-            echo "Warning: Could not find create-dmg script"
-          fi
+          brew install --HEAD mitchellh/gon/gon
+          which gon
+          gon --version
 
       - name: Wails Build
         uses: dAppServer/wails-build-action@main
