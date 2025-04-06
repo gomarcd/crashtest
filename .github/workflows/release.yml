@@ -33,8 +33,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Extract version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+      - name: Extract version and generate release version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+          echo "YEAR=$(date +'%Y')" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=${YEAR}.${VERSION}" >> $GITHUB_ENV
 
       - name: Prepare gon configuration
         if: runner.os == 'macOS'
@@ -52,9 +56,6 @@ jobs:
           APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}          
-
-      - name: Extract version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
       - name: Copy app icon
         shell: bash
@@ -86,11 +87,15 @@ jobs:
         shell: pwsh
         run: |
           mkdir -Force release
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64.exe"
-          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" "release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64_installer.exe"
-          Set-Location release
-          $hashes = Get-FileHash -Algorithm SHA256 * | ForEach-Object { "$($_.Hash)  $($_.Name)" }
-          $hashes | Out-File -FilePath SHA256SUMS.txt -Encoding utf8
+          $exePath = "release/${{ secrets.APP_NAME }}_${{ env.RELEASE_VERSION }}_amd64.exe"
+          $installerPath = "release/${{ secrets.APP_NAME }}_${{ env.RELEASE_VERSION }}_amd64_installer.exe"
+          
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}" $exePath
+          Copy-Item "build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe" $installerPath
+          
+          # Generate individual SHA256 files with correct format for verification
+          Get-FileHash -Algorithm SHA256 $exePath | ForEach-Object { "$($_.Hash)  $(Split-Path $exePath -Leaf)" } | Out-File -FilePath "$exePath.sha256" -Encoding utf8
+          Get-FileHash -Algorithm SHA256 $installerPath | ForEach-Object { "$($_.Hash)  $(Split-Path $installerPath -Leaf)" } | Out-File -FilePath "$installerPath.sha256" -Encoding utf8
 
       - name: Prepare release artifacts for Mac/Linux
         if: runner.os != 'Windows'
@@ -98,14 +103,30 @@ jobs:
         run: |
           mkdir -p release
           if [[ "${{ matrix.platform }}" == "darwin/universal" ]]; then
-            cp build/bin/${{ secrets.APP_NAME }}.app.zip release/${{ secrets.APP_NAME }}${{ env.VERSION }}_universal.zip
-            [ -f build/bin/${{ secrets.APP_NAME }}.dmg ] && cp build/bin/${{ secrets.APP_NAME }}.dmg release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_universal.dmg
+            zipName="${{ secrets.APP_NAME }}_${{ env.RELEASE_VERSION }}_universal.zip"
+            zipPath="release/$zipName"
+            cp build/bin/${{ secrets.APP_NAME }}.app.zip $zipPath
+            cd release
+            shasum -a 256 $zipName > "$zipName.sha256"
+            cd ..
+            
+            if [ -f build/bin/${{ secrets.APP_NAME }}.dmg ]; then
+              dmgName="${{ secrets.APP_NAME }}_${{ env.RELEASE_VERSION }}_universal.dmg"
+              dmgPath="release/$dmgName"
+              cp build/bin/${{ secrets.APP_NAME }}.dmg $dmgPath
+              cd release
+              shasum -a 256 $dmgName > "$dmgName.sha256"
+              cd ..
+            fi
           elif [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
-            cp build/bin/${{ secrets.APP_NAME }} release/${{ secrets.APP_NAME }}_${{ env.VERSION }}_amd64
+            binName="${{ secrets.APP_NAME }}_${{ env.RELEASE_VERSION }}_amd64"
+            binPath="release/$binName"
+            cp build/bin/${{ secrets.APP_NAME }} $binPath
+            cd release
+            shasum -a 256 $binName > "$binName.sha256"
+            cd ..
           fi
-          cd release
-          shasum -a 256 * > SHA256SUMS.txt
-          ls -la
+          ls -la release/
 
       - name: Import GPG key (with check)
         shell: bash
@@ -132,17 +153,23 @@ jobs:
         shell: bash
         run: |
           for file in release/*; do
-            gpg --batch --yes --detach-sign --output "$file.sig" "$file"
+            if [[ ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              gpg --batch --yes --detach-sign --output "$file.sig" "$file"
+            fi
           done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ secrets.APP_NAME }} ${{ github.ref_name }}
+          name: ${{ secrets.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: release/**
-          generate_release_notes: true
+          generate_release_notes: false
+          body: |
+            [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/gomarcd/crashtest/commits/${{ github.ref_name }})
+            
+            For verification instructions, see [Security Documentation](https://github.com/gomarcd/crashtest/blob/main/README.md#security).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
