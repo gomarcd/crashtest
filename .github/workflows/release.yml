@@ -55,6 +55,12 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
+      - name: Copy app icon
+        shell: bash
+        run: |
+          mkdir -p build
+          cp ./appicon.png build/appicon.png
+
       - name: Wails Build
         uses: dAppServer/wails-build-action@main
         with:
