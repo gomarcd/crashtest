@@ -137,29 +137,31 @@ jobs:
           if [ -d dist/dist-linux ]; then
             if [ -f "dist/dist-linux/${APP_NAME}" ]; then
               mv "dist/dist-linux/${APP_NAME}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64"
-              CHECKSUM_BODY_DATA+=$(sha256sum "release/${APP_NAME}_${RELEASE_VERSION}_amd64" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
           fi
           if [ -d dist/dist-windows ]; then
             if [ -f "dist/dist-windows/${APP_NAME}" ]; then
               mv "dist/dist-windows/${APP_NAME}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.exe"
-              CHECKSUM_BODY_DATA+=$(sha256sum "release/${APP_NAME}_${RELEASE_VERSION}_amd64.exe" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
             if [ -f "dist/dist-windows/${APP_NAME}-amd64-installer.exe" ]; then
               mv "dist/dist-windows/${APP_NAME}-amd64-installer.exe" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
-              CHECKSUM_BODY_DATA+=$(sha256sum "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
           fi
           if [ -d dist/dist-mac ]; then
             if [ -f "dist/dist-mac/${APP_NAME}.app.zip" ]; then
                mv "dist/dist-mac/${APP_NAME}.app.zip" "release/${APP_NAME}_${RELEASE_VERSION}_universal.zip"
-               CHECKSUM_BODY_DATA+=$(sha256sum "release/${APP_NAME}_${RELEASE_VERSION}_universal.zip" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
              if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
                mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
-               CHECKSUM_BODY_DATA+=$(sha256sum "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
             fi
           fi
+          pushd release > /dev/null
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+               CHECKSUM_BODY_DATA+=$(sha256sum "$file" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+          done
+          popd > /dev/null
           echo "checksum_list<<EOF" >> $GITHUB_OUTPUT
           echo -e "${CHECKSUM_BODY_DATA}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
