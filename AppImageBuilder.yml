@@ -12,3 +12,8 @@ AppDir:
       - build/bin/${APP_NAME}
       - build/appicon.png
       - frontend/dist/**
+    exclude: []
+AppImage:
+  arch: x86_64
+  update-information: ${UPDATE_INFO}
+  file_name: ${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
