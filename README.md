@@ -42,9 +42,13 @@ Make sure you have GPG installed. You can then download our GPG pubkey to verify
 - From openpgp.org with `gpg --keyserver hkps://keys.openpgp.org --recv-keys 1353E058CB77A738F6AE3362883E797AA65E9AE2` or by [clicking here](https://keys.openpgp.org/search?q=1353E058CB77A738F6AE3362883E797AA65E9AE2)
 - Download the release file (e.g., `Crashtest_2025.0.0.1_universal.dmg` or `.exe`) and its corresponding `.sig` file into the same directory.
 
-Once you have our pubkey and the files you want to verify:
+Once you have downloaded our pubkey and the files you want to verify, run the following command in that directory ensuring filenames match what you actually downloaded:
 
-- Run the following command in that directory ensuring filenames match what you downloaded: `gpg --verify Crashtest_2025.0.0.1_universal.dmg.sig Crashtest_2025.0.0.1_universal.dmg`, you should get output like this:
+```
+gpg --verify Crashtest_2025.0.0.1_universal.dmg.sig Crashtest_2025.0.0.1_universal.dmg
+```
+
+This should output something like this:
 
 ```
 gpg: Signature made Sun  6 Apr 11:52:54 2025 MDT
@@ -56,9 +60,32 @@ The purpose of this step is to verify with cryptographic assurances that the dow
 
 ### Verify SHA256 Checksums
 
-- Download the corresponding `.sha256` file for the Crashtest version you downloaded and follow these steps being sure to update the commands to match your actual filenames:
-	1. Checks if the downloaded file matches the `.sha256` hash: `sha256sum -c Crashtest_2025.0.0.1_universal.dmg.sha256` - should output something like `Crashtest_2025.0.0.1_universal.dmg: OK`
-    2. Output the downloaded file's SHA256 checksum to verify manually: `sha256sum Crashtest_2025.0.0.1_universal.dmg` - should output something like `18d6399d63ffec7f7d53ce2b0fbb2b53b686dcd55cdecc4f87bcc98e3be0ba9b  Crashtest_2025.0.0.1_universal.dmg`
-    3. Output the checksum from the `.sha256` file: `cat Crashtest_2025.0.0.1_universal.dmg.sha256` - should match step 2 exactly.
+- Download the corresponding `.sha256` file for the Crashtest version you downloaded and follow these steps, being sure to update the commands with the actual filenames you downloaded:
+
+	1. Check if the downloaded file matches the `.sha256` hash:
+
+    ```
+    sha256sum -c Crashtest_2025.0.0.1_universal.dmg.sha256` - should output something like `Crashtest_2025.0.0.1_universal.dmg: OK
+    ```
+
+    2. Output the downloaded file's SHA256 checksum to verify manually:
+
+    ```
+    sha256sum Crashtest_2025.0.0.1_universal.dmg
+    ```
+
+    This should output something like:
+
+    ```
+    18d6399d63ffec7f7d53ce2b0fbb2b53b686dcd55cdecc4f87bcc98e3be0ba9b  Crashtest_2025.0.0.1_universal.dmg
+    ```
+
+    3. Output the checksum from the `.sha256` file:
+
+    ```
+    cat Crashtest_2025.0.0.1_universal.dmg.sha256
+    ```
+
+    This should match step 2 exactly.
 
 The purpose of this step is to provide cryptographic assurances that the contents of the downloaded file correspond and have not been tampered with.
