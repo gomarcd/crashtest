@@ -106,16 +106,17 @@ jobs:
         if: matrix.platform == 'linux/amd64'
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
-        run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
-          cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
-          cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
-          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
-          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
-          chmod +x AppDir/AppRun
-          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
-          fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
-          mv "${APP_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
+          run: |
+            mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
+            cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
+            cp build/appicon.png AppDir/${APP_NAME}.png
+            cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+            echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
+            echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
+            chmod +x AppDir/AppRun
+            ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+            fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
+            mv "${APP_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
 
       - name: Verify environment variables
         shell: bash
@@ -270,7 +271,6 @@ jobs:
           echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
           sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
           sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
-          # Update to point to AppImage by default (could be .deb if preferred)
           sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64.AppImage\"/g" landing-page/index.html
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
