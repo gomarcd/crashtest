@@ -1,100 +1,117 @@
 <template>
-    <div class="w-full h-full flex flex-col">
-      <div class="flex bg-gray-100 border-b">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          @click="selectTab(tab.id)"
-          class="px-4 py-2 text-sm font-medium transition-colors"
-          :class="[
-            activeTab === tab.id 
-              ? 'border-b-2 border-primary text-primary' 
-              : 'text-gray-600 hover:text-gray-900'
-          ]"
+  <div class="w-full h-full flex flex-col">
+    <div class="flex bg-gray-100 border-b">
+      <button 
+        v-for="tab in tabs" 
+        :key="tab.id"
+        class="px-4 py-2 text-sm font-medium transition-colors"
+        :class="[
+          activeTab === tab.id 
+            ? 'border-b-2 border-primary text-primary' 
+            : 'text-gray-600 hover:text-gray-900'
+        ]"
+        @click="selectTab(tab.id)"
+      >
+        {{ tab.name }}
+      </button>
+    </div>
+      
+    <div class="flex-grow overflow-auto">
+      <div
+        v-show="activeTab === 'headers'"
+        class="p-4"
+      >
+        <div
+          v-for="(header, index) in headers"
+          :key="index"
+          class="flex items-center gap-2 mb-2 w-full"
         >
-          {{ tab.name }}
+          <input 
+            v-model="header.enabled" 
+            type="checkbox" 
+            class="rounded text-primary focus:ring-primary flex-shrink-0"
+          >
+          <input 
+            v-model="header.key" 
+            type="text" 
+            placeholder="Header" 
+            class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+          >
+          <input 
+            v-model="header.value" 
+            type="text" 
+            placeholder="Value" 
+            class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+          >
+          <button 
+            class="text-red-500 hover:text-red-700 flex-shrink-0" 
+            @click="removeHeader(index)"
+          >
+            ✕
+          </button>
+        </div>
+        <button 
+          class="mt-2 text-primary hover:text-primary-700 text-sm" 
+          @click="addHeader"
+        >
+          + Add Header
         </button>
       </div>
-      
-      <div class="flex-grow overflow-auto">
-        <div v-show="activeTab === 'headers'" class="p-4">
-          <div v-for="(header, index) in headers" :key="index" class="flex items-center gap-2 mb-2 w-full">
-            <input 
-              type="checkbox" 
-              v-model="header.enabled" 
-              class="rounded text-primary focus:ring-primary flex-shrink-0"
-            />
-            <input 
-              type="text" 
-              v-model="header.key" 
-              placeholder="Header" 
-              class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
-            />
-            <input 
-              type="text" 
-              v-model="header.value" 
-              placeholder="Value" 
-              class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
-            />
-            <button 
-              @click="removeHeader(index)" 
-              class="text-red-500 hover:text-red-700 flex-shrink-0"
-            >
-              ✕
-            </button>
-          </div>
-          <button 
-            @click="addHeader" 
-            class="mt-2 text-primary hover:text-primary-700 text-sm"
+        
+      <div
+        v-show="activeTab === 'params'"
+        class="p-4"
+      >
+        <div
+          v-for="(param, index) in params"
+          :key="index"
+          class="flex items-center gap-2 mb-2 w-full"
+        >
+          <input 
+            v-model="param.enabled" 
+            type="checkbox" 
+            class="rounded text-primary focus:ring-primary flex-shrink-0"
           >
-            + Add Header
+          <input 
+            v-model="param.key" 
+            type="text" 
+            placeholder="Parameter" 
+            class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+          >
+          <input 
+            v-model="param.value" 
+            type="text" 
+            placeholder="Value" 
+            class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+          >
+          <button 
+            class="text-red-500 hover:text-red-700 flex-shrink-0" 
+            @click="removeParam(index)"
+          >
+            ✕
           </button>
         </div>
+        <button 
+          class="mt-2 text-primary hover:text-primary-700 text-sm" 
+          @click="addParam"
+        >
+          + Add Parameter
+        </button>
+      </div>
         
-        <div v-show="activeTab === 'params'" class="p-4">
-          <div v-for="(param, index) in params" :key="index" class="flex items-center gap-2 mb-2 w-full">
-            <input 
-              type="checkbox" 
-              v-model="param.enabled" 
-              class="rounded text-primary focus:ring-primary flex-shrink-0"
-            />
-            <input 
-              type="text" 
-              v-model="param.key" 
-              placeholder="Parameter" 
-              class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
-            />
-            <input 
-              type="text" 
-              v-model="param.value" 
-              placeholder="Value" 
-              class="flex-1 min-w-0 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
-            />
-            <button 
-              @click="removeParam(index)" 
-              class="text-red-500 hover:text-red-700 flex-shrink-0"
-            >
-              ✕
-            </button>
-          </div>
-          <button 
-            @click="addParam" 
-            class="mt-2 text-primary hover:text-primary-700 text-sm"
-          >
-            + Add Parameter
-          </button>
-        </div>
-        
-        <div v-show="activeTab === 'body'" class="h-full">
-          <textarea 
-            v-model="requestBody" 
-            placeholder="Request body (JSON, XML, etc.)" 
-            class="w-full h-full p-4 border-none focus:ring-0 font-mono text-sm"
-          ></textarea>
-        </div>
+      <div
+        v-show="activeTab === 'body'"
+        class="h-full"
+      >
+        <textarea 
+          v-model="requestBody" 
+          placeholder="Request body (JSON, XML, etc.)" 
+          class="w-full h-full p-4 border-none focus:ring-0 font-mono text-sm"
+        />
       </div>
     </div>
-  </template>
+  </div>
+</template>
   
   <script setup lang="ts">
   import { ref, defineEmits, watch } from 'vue';

@@ -20,12 +20,12 @@
       v-model="url" 
       placeholder="Enter request URL" 
       class="flex-grow h-10 rounded-md px-3 border-gray-300 focus:border-primary focus:ring-primary"
-    />
+    >
     
     <button 
-      @click="sendRequest" 
-      class="bg-primary hover:bg-primary-700 text-white h-10 px-4 rounded-md font-medium transition-colors"
+      class="bg-primary hover:bg-primary-700 text-white h-10 px-4 rounded-md font-medium transition-colors" 
       :disabled="!url"
+      @click="sendRequest"
     >
       Send
     </button>
