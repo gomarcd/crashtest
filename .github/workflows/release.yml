@@ -163,18 +163,8 @@ jobs:
             if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" ]; then
               mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage"
             fi
-            if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" ]; then
-              mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
-            fi
-          fi
-          if [ -d dist/dist-windows ]; then
-            if [ -f "dist/dist-windows/${APP_NAME}-amd64-installer.exe" ]; then
-              mv "dist/dist-windows/${APP_NAME}-amd64-installer.exe" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
-            fi
-          fi
-          if [ -d dist/dist-mac ]; then
-            if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
-              mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
+            if ls dist/dist-linux/*"${RELEASE_VERSION}_amd64.deb" >/dev/null 2>&1; then
+              mv dist/dist-linux/*"${RELEASE_VERSION}_amd64.deb" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
             fi
           fi
           pushd release > /dev/null
@@ -271,7 +261,6 @@ jobs:
           echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
           sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
           sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
-          # Update to point to AppImage by default (could be .deb if preferred)
           sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64.AppImage\"/g" landing-page/index.html
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
