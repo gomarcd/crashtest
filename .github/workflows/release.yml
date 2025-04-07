@@ -115,6 +115,8 @@ jobs:
           echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
           chmod +x AppDir/AppRun
           ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+          DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "Using Debian package name: ${DEB_PKG_NAME}"
           fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
           mv "${APP_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
 
