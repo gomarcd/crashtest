@@ -70,8 +70,10 @@ The purpose of this step is to verify with cryptographic assurances that the dow
 	1. Check if the downloaded file matches the `.sha256` hash:
 
     ```
-    sha256sum -c Crashtest_2025.0.0.1_universal.dmg.sha256` - should output something like `Crashtest_2025.0.0.1_universal.dmg: OK
+    sha256sum -c Crashtest_2025.0.0.1_universal.dmg.sha256
     ```
+
+    Should output something like: `Crashtest_2025.0.0.1_universal.dmg: OK`
 
     2. Output the downloaded file's SHA256 checksum to verify manually:
 
