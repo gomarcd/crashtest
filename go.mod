@@ -2,7 +2,7 @@ module Crashtest
 
 go 1.23
 
-require github.com/wailsapp/wails/v2 v2.10.1
+require github.com/wailsapp/wails/v2 v2.9.0
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect
@@ -33,4 +33,4 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 )
 
-// replace github.com/wailsapp/wails/v2 v2.10.1 => /Users/md/go/pkg/mod
+// replace github.com/wailsapp/wails/v2 v2.9.0 => /Users/md/go/pkg/mod
