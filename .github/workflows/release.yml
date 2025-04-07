@@ -13,9 +13,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - platform: 'darwin/universal'
+            os: 'macos-latest'
+            artifact_suffix: 'mac'
           - platform: 'linux/amd64'
             os: 'ubuntu-latest'
             artifact_suffix: 'linux'
+          - platform: 'windows/amd64'
+            os: 'windows-latest'
+            artifact_suffix: 'windows'
 
     runs-on: ${{ matrix.os }}
     permissions:
@@ -45,6 +51,23 @@ jobs:
           echo "Release year: ${YEAR}"
           echo "Full release version: ${RELEASE_VERSION}"
 
+      - name: Prepare gon configuration
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p build/darwin
+          cp gon-sign.json build/darwin/gon-sign.json
+          cp gon-notarize.json build/darwin/gon-notarize.json
+          envsubst < build/darwin/gon-sign.json > build/darwin/gon-sign-temp.json && mv build/darwin/gon-sign-temp.json build/darwin/gon-sign.json
+          envsubst < build/darwin/gon-notarize.json > build/darwin/gon-notarize-temp.json && mv build/darwin/gon-notarize-temp.json build/darwin/gon-notarize.json
+        env:
+          APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
+          APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
       - name: Copy app icon
         shell: bash
         run: |
@@ -58,46 +81,41 @@ jobs:
           wails-version: "v2.9.0"
           build-name: ${{ secrets.APP_NAME }}
           build-platform: ${{ matrix.platform }}
-          package: false  # Don’t package yet, let AppImageBuilder handle it
-          build-tags: "webkit2_41"  # Required for Ubuntu 24.04
+          package: false
+          nsis: ${{ matrix.os == 'windows-latest' }}
+          sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
+          sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
+          sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign-macos-installer-cert: ${{ secrets.APPLE_CERTIFICATE }}
+          sign-macos-installer-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
+          sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
+          sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
       - name: Install dependencies for packaging (Linux only)
         if: matrix.platform == 'linux/amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev gcc make file desktop-file-utils
+          sudo apt-get install -y ruby ruby-dev gcc make file desktop-file-utils libfuse2
           sudo gem install --no-document fpm
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
 
-      - name: Prepare AppImage recipe (Linux only)
-        if: matrix.platform == 'linux/amd64'
-        shell: bash
-        run: |
-          mkdir -p build
-          cp ./AppImageBuilder.yml build/AppImageBuilder.yml
-          envsubst < build/AppImageBuilder.yml > build/AppImageBuilder-temp.yml && mv build/AppImageBuilder-temp.yml build/AppImageBuilder.yml
-        env:
-          APP_NAME: ${{ secrets.APP_NAME }}
-          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
-
-      - name: Build AppImage (Linux only)
-        if: matrix.platform == 'linux/amd64'
-        uses: AppImageCrafters/build-appimage@master
-        with:
-          recipe: ./build/AppImageBuilder.yml
-          args: '--skip-test'
-        env:
-          UPDATE_INFO: gh-releases-zsync|${{ github.repository_owner }}|${{ secrets.APP_NAME }}|latest|*x86_64.AppImage.zsync
-
-      - name: Package Linux .deb and move AppImage (Linux only)
+      - name: Package Linux AppImage and .deb (Linux only)
         if: matrix.platform == 'linux/amd64'
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
         run: |
-          ls -l *.AppImage || echo "No AppImage found; check build step logs."
-          fpm -s dir -t deb -n "${APP_NAME}" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"${APP_NAME}"
-          mv *"${RELEASE_VERSION}_amd64.deb" build/bin/
-          mv *.AppImage build/bin/
+          mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
+          cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
+          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+          fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
+          mv "${APP_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
 
       - name: Verify environment variables
         shell: bash
@@ -112,3 +130,156 @@ jobs:
           name: dist-${{ matrix.artifact_suffix }}
           path: build/bin/
           if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Prepare Release Files and Generate Body Checksums
+        id: prep_files
+        shell: bash
+        run: |
+          if [ -z "$APP_NAME" ]; then
+            echo "Error: APP_NAME environment variable is not set."
+            exit 1
+          fi
+          mkdir release
+          CHECKSUM_BODY_DATA="### Checksums\n\n| File | SHA256 |\n|---|---|\n"
+          if [ -d dist/dist-linux ]; then
+            if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" ]; then
+              mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage"
+            fi
+            if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" ]; then
+              mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
+            fi
+          fi
+          if [ -d dist/dist-windows ]; then
+            if [ -f "dist/dist-windows/${APP_NAME}-amd64-installer.exe" ]; then
+              mv "dist/dist-windows/${APP_NAME}-amd64-installer.exe" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
+            fi
+          fi
+          if [ -d dist/dist-mac ]; then
+            if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
+              mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
+            fi
+          fi
+          pushd release > /dev/null
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              CHECKSUM_BODY_DATA+=$(sha256sum "$file" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+          done
+          popd > /dev/null
+          echo "checksum_list<<EOF" >> $GITHUB_OUTPUT
+          echo -e "${CHECKSUM_BODY_DATA}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          ls -la release
+
+      - name: Generate Checksum Files
+        shell: bash
+        run: |
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
+          done
+          cd ..
+
+      - name: Import GPG key
+        shell: bash
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "GPG_PRIVATE_KEY environment variable is not set or is empty. Skipping GPG steps."
+            echo "gpg_skipped=true" >> $GITHUB_ENV
+          else
+            echo "GPG_PRIVATE_KEY is set. Attempting import..."
+            echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+            gpg_exit_code=$?
+            if [[ $gpg_exit_code -ne 0 ]]; then
+              echo "GPG key import failed with exit code $gpg_exit_code"
+              exit $gpg_exit_code
+            fi
+            echo "GPG key import successful."
+            echo "gpg_skipped=false" >> $GITHUB_ENV
+          fi
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: GPG Sign Artifacts
+        if: env.gpg_skipped != 'true'
+        shell: bash
+        run: |
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              echo "Signing file: $file"
+              gpg --batch --yes --detach-sign --output "$file.sig" "$file"
+            fi
+          done
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: release/**
+          body: |
+            [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }})
+
+            For verification instructions, see [Security Documentation](https://github.com/${{ github.repository }}/blob/main/README.md#security).
+
+            ---
+            ${{ steps.prep_files.outputs.checksum_list }}
+
+  update-index:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout landing-page branch
+        uses: actions/checkout@v3
+        with:
+          ref: landing-page
+          fetch-depth: 0
+
+      - name: Update download links in index.html
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          YEAR=$(date +%Y)
+          RELEASE_VERSION="${YEAR}.${VERSION}"
+          echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
+          sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
+          sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
+          # Update to point to AppImage by default (could be .deb if preferred)
+          sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64.AppImage\"/g" landing-page/index.html
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add landing-page/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Update download links for release ${TAG}"
+            git push origin landing-page
+          else
+            echo "No changes to commit"
+          fi
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
