@@ -109,6 +109,8 @@ jobs:
         run: |
           mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
           cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
+          chmod +x AppDir/usr/bin/${APP_NAME}
+          cp -r frontend/dist/* AppDir/usr/bin/  # Copy frontend assets
           cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
           cp build/appicon.png AppDir/${APP_NAME}.png
           echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
