@@ -32,7 +32,7 @@ Made with love in Golang, with [Wails](https://wails.io).
 
 :white_check_mark: GPG signing: macOS, Windows and Linux binares are always GPG-signed with ed25519 key `A65E9AE2` (Fingerprint: `1353 E058 CB77 A738 F6AE  3362 883E 797A A65E 9AE2`), so you can verify the downloaded files are indeed from me
 
-:white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to release notes for convenience
+:white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to [release notes](https://github.com/gomarcd/crashtest/releases/) for convenience
 
 :white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here
 
