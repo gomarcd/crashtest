@@ -167,6 +167,16 @@ jobs:
               mv dist/dist-linux/*"${RELEASE_VERSION}_amd64.deb" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
             fi
           fi
+          if [ -d dist/dist-windows ]; then
+            if [ -f "dist/dist-windows/${APP_NAME}-amd64-installer.exe" ]; then
+              mv "dist/dist-windows/${APP_NAME}-amd64-installer.exe" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
+            fi
+          fi
+          if [ -d dist/dist-mac ]; then
+            if [ -f "dist/dist-mac/${APP_NAME}.dmg" ]; then
+              mv "dist/dist-mac/${APP_NAME}.dmg" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"
+            fi
+          fi
           pushd release > /dev/null
           for file in *; do
             if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
