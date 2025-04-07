@@ -70,10 +70,11 @@ func (a *APIService) SendRequest(config RequestConfig) (*APIResponse, error) {
 	if err != nil {
 		return &APIResponse{Error: err.Error()}, nil
 	}
-    defer func() {
-        if closeErr := resp.Body.Close(); closeErr != nil {
-        }
-    }()
+	defer func() {
+	    if closeErr := resp.Body.Close(); closeErr != nil {
+	        log.Printf("Error closing response body: %v", closeErr)
+	    }
+	}()
 
 	headers := make(map[string]string)
 	for key, values := range resp.Header {
