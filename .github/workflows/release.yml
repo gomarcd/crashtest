@@ -75,7 +75,7 @@ jobs:
           cp ./appicon.png build/appicon.png
 
       - name: Wails Build
-        uses: gomarcd/wails-build-action@main
+        uses: gomarcd/wails-build-action@d926ec814f69d88d69f5bf79487a74df7549d548
         with:
           go-version: "1.23"
           wails-version: "v2.9.0"
