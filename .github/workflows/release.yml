@@ -110,8 +110,8 @@ jobs:
           mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
           cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
           cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
-          echo "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false" > AppDir/${APP_NAME}.desktop
-          echo "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
+          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false" > AppDir/${APP_NAME}.desktop
+          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
           chmod +x AppDir/AppRun
           ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
           fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
