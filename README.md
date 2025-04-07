@@ -2,33 +2,31 @@
 
 # Crashtest
 
-A fast and lightweight cross-platform API client made in 🇨🇦 Canada 🇨🇦
+The fast, minimal API tool.
+
+🇨🇦 Made in Canada 🇨🇦
 
 ![Crashtest screenshot](screenshot.png)
 
 ## Features
 
-:white_check_mark: Modern, minimal UI
+:white_check_mark: Modern, open source, minimal UI
 
-:white_check_mark: Free and open source
+:white_check_mark: No paywall, no registration
 
-:white_check_mark: No paywall and no registration required
+:white_check_mark: Designed with privacy and security in mind
 
-:white_check_mark: Designed for privacy and security
+:white_check_mark: Set request parameters and see response headers
 
-:white_check_mark: Set request headers/parameters/body and view response headers
-
-:white_check_mark: Windows, macOS and Linux support
+:white_check_mark: Cross-platform support: Windows, macOS and Linux
 
 ## Technology
 
-Built in Golang with [Wails](https://wails.io).
+Made with love in Golang, with [Wails](https://wails.io).
 
 ## Security
 
-:white_check_mark: No telemetry, ads or trackers
-
-:white_check_mark: Runs locally on your machine, the only data ever going out are queries explicitly sent by you
+:white_check_mark: Runs locally on your machine, the only data ever going out are queries explicitly sent by you - no telemetry, ads or trackers
 
 :white_check_mark: Code signing: macOS binaries are signed with official Apple certificate issued by Developer ID Certification Authority, Windows binaries will be code signed via Azure Trusted Signing pending its identity validation
 
@@ -36,7 +34,7 @@ Built in Golang with [Wails](https://wails.io).
 
 :white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to release notes for convenience
 
-:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here.
+:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here
 
 ### Verify GPG Signature
 
