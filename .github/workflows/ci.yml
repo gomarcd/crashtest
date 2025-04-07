@@ -7,7 +7,11 @@ on:
       - 'README.md'
       - 'docs/**'
       - '*.md'
-      - '.github/workflows/release.yml'
+      - '.github/**'
+      - 'LICENSE'
+      - 'landing-page/**'
+      - 'build/**' 
+      - 'screenshot.png'
   pull_request:
     branches: [ main ]
 
