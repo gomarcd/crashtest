@@ -37,6 +37,9 @@ jobs:
     - name: Install Go dependencies
       run: go mod download
 
+    - name: Install Wails
+      run: go install github.com/wailsapp/wails/v2/cmd/wails@d96d3b001069b0e28be93c20dc6424a3b64d90a1
+
     - name: Install Frontend dependencies
       working-directory: frontend
       run: npm ci
@@ -55,4 +58,4 @@ jobs:
       run: go test ./... -v
 
     - name: Wails Build
-      run: go run github.com/wailsapp/wails/v2 build
+      run: wails build
