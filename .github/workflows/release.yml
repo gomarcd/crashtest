@@ -97,28 +97,38 @@ jobs:
         if: matrix.platform == 'linux/amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev gcc make file desktop-file-utils libfuse2
+          sudo apt-get install -y ruby ruby-dev gcc make file desktop-file-utils
           sudo gem install --no-document fpm
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
 
-      - name: Package Linux AppImage and .deb (Linux only)
+      - name: Prepare AppImage recipe (Linux only)
+        if: matrix.platform == 'linux/amd64'
+        shell: bash
+        run: |
+          mkdir -p build
+          cp ./AppImageBuilder.yml build/AppImageBuilder.yml  # Copy from root to build/
+          envsubst < build/AppImageBuilder.yml > build/AppImageBuilder-temp.yml && mv build/AppImageBuilder-temp.yml build/AppImageBuilder.yml
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+
+      - name: Build AppImage (Linux only)
+        if: matrix.platform == 'linux/amd64'
+        uses: AppImageCrafters/build-appimage@master
+        with:
+          recipe: ./build/AppImageBuilder.yml  # Path relative to repository root
+          args: '--skip-test'
+        env:
+          UPDATE_INFO: gh-releases-zsync|${{ github.repository_owner }}|${{ secrets.APP_NAME }}|latest|*x86_64.AppImage.zsync
+
+      - name: Package Linux .deb and move AppImage (Linux only)
         if: matrix.platform == 'linux/amd64'
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
         run: |
-          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-          cp build/bin/${APP_NAME} AppDir/${APP_NAME}
-          chmod +x AppDir/${APP_NAME}
-          cp -r frontend/dist/* AppDir/
-          cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
-          cp build/appicon.png AppDir/${APP_NAME}.png
-          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
-          echo -e '#!/bin/sh\nHERE=$(dirname $(readlink -f $0))\ncd "$HERE"\nexec "$HERE/'${APP_NAME}'"' > AppDir/AppRun
-          chmod +x AppDir/AppRun
-          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
-          fpm -s dir -t deb -n "$APP_NAME" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"$APP_NAME"
+          ls -l *.AppImage || echo "No AppImage found; check build step logs."
+          fpm -s dir -t deb -n "${APP_NAME}" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"${APP_NAME}"
           mv *"${RELEASE_VERSION}_amd64.deb" build/bin/
+          mv *.AppImage build/bin/
 
       - name: Verify environment variables
         shell: bash
@@ -271,9 +281,9 @@ jobs:
           YEAR=$(date +%Y)
           RELEASE_VERSION="${YEAR}.${VERSION}"
           echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
-          sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
-          sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
-          sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/gomarcd\/crashtest\/releases\/download\/${TAG}\/Crashtest_${RELEASE_VERSION}_amd64.AppImage\"/g" landing-page/index.html
+          sed -i -E "/id=\"download-windows\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/${{ github.repository_owner }}\/${{ github.event.repository.name }}\/releases\/download\/${TAG}\/${{ secrets.APP_NAME }}_${RELEASE_VERSION}_amd64_installer.exe\"/g" landing-page/index.html
+          sed -i -E "/id=\"download-mac\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/${{ github.repository_owner }}\/${{ github.event.repository.name }}\/releases\/download\/${TAG}\/${{ secrets.APP_NAME }}_${RELEASE_VERSION}_universal.dmg\"/g" landing-page/index.html
+          sed -i -E "/id=\"download-linux\"/ s/href=\"[^\"]*\"/href=\"https:\/\/github.com\/${{ github.repository_owner }}\/${{ github.event.repository.name }}\/releases\/download\/${TAG}\/${{ secrets.APP_NAME }}_${RELEASE_VERSION}_amd64.AppImage\"/g" landing-page/index.html
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add landing-page/index.html

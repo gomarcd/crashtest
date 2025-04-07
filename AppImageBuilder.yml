@@ -1,0 +1,14 @@
+AppDir:
+  path: ./AppDir
+  app_info:
+    id: ${BUNDLE_ID}
+    name: ${APP_NAME}
+    icon: appicon
+    version: ${RELEASE_VERSION}
+    exec: ${APP_NAME}
+    exec_args: ""
+  files:
+    include:
+      - build/bin/${APP_NAME}
+      - build/appicon.png
+      - frontend/dist/**
