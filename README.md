@@ -34,7 +34,9 @@ Made with love in Golang, with [Wails](https://wails.io).
 
 :white_check_mark: SHA256 checksums accompany downloads for every release so you can verify the integrity of the file - expected checksums are added to [release notes](https://github.com/gomarcd/crashtest/releases/) for convenience
 
-:white_check_mark: Reproducible builds with instructions are coming, stay tuned! This step will make it easier for anyone who is so inclined to validate the available binaries are always identical to what they get when they compile it themselves from the source code here
+:white_check_mark: All commits/tags pushed into this repository are GPG-signed with key [F7FA7CBDCC32ECA6](https://keys.openpgp.org/search?q=F7FA7CBDCC32ECA6). This key never leaves my local machine, providing high cryptographic assurances any code committed to the repository is my own.
+
+:white_check_mark: **Reproducible builds** with instructions are coming, stay tuned! This will make it easier for anyone who is so inclined to compile the program from source and validate that resulting binaries are bit-for-bit identical to those published in our releases.
 
 ### Verify GPG Signature
 
