@@ -1,4 +1,4 @@
-[![Release](https://github.com/gomarcd/crashtest/workflows/Release/badge.svg)](https://github.com/gomarcd/crashtest/actions/workflows/release.yml)
+[![Release](https://github.com/gomarcd/crashtest/workflows/Release/badge.svg)](https://github.com/gomarcd/crashtest/actions/workflows/release.yml) &nbsp; ![CI](https://github.com/gomarcd/crashtest/actions/workflows/ci.yml/badge.svg)
 
 # Crashtest
 
