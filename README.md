@@ -8,12 +8,17 @@ A fast and lightweight cross-platform API client made in 🇨🇦 Canada 🇨�
 
 ## Features
 
-- Modern, minimal UI
-- Free and open source
-- No paywall and no registration required
-- Designed for privacy and security
-- Set request headers/parameters/body and view response headers
-- Windows, macOS and Linux support
+:white_check_mark: Modern, minimal UI
+
+:white_check_mark: Free and open source
+
+:white_check_mark: No paywall and no registration required
+
+:white_check_mark: Designed for privacy and security
+
+:white_check_mark: Set request headers/parameters/body and view response headers
+
+:white_check_mark: Windows, macOS and Linux support
 
 ## Technology
 
@@ -23,7 +28,7 @@ Built in Golang with [Wails](https://wails.io).
 
 :white_check_mark: No telemetry, ads or trackers
 
-:white_check_mark: Runs locally on your machine, the only data ever going out are queries explicitly sent by user
+:white_check_mark: Runs locally on your machine, the only data ever going out are queries explicitly sent by you
 
 :white_check_mark: Code signing: macOS binaries are signed with official Apple certificate issued by Developer ID Certification Authority, Windows binaries will be code signed via Azure Trusted Signing pending its identity validation
 
