@@ -119,7 +119,10 @@ jobs:
           echo "Using Debian package name: ${DEB_PKG_NAME}"
           fpm -s dir -t deb -n "${DEB_PKG_NAME}" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"${APP_NAME}"
           mv "${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
-
+          echo "Ensuring read permissions on .deb package..."
+          chmod a+r build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+          ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" 
+          
       - name: Verify environment variables
         shell: bash
         run: |
