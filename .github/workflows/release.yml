@@ -161,12 +161,22 @@ jobs:
           fi
           mkdir release
           CHECKSUM_BODY_DATA="### Checksums\n\n| File | SHA256 |\n|---|---|\n"
+          DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "Checking for Debian package using name: ${DEB_PKG_NAME}"
           if [ -d dist/dist-linux ]; then
             if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" ]; then
               mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage"
             fi
-            if [ -f "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" ]; then
-              mv "dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.deb" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
+            DEB_SRC_PATH="dist/dist-linux/${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+            DEB_DEST_PATH="release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"
+            if [ -f "${DEB_SRC_PATH}" ]; then
+              mv "${DEB_SRC_PATH}" "${DEB_DEST_PATH}"
+              echo "Found and moved Debian package: ${DEB_SRC_PATH} to ${DEB_DEST_PATH}"
+            else
+              # Add debugging output if not found
+              echo "Warning: Debian package not found at ${DEB_SRC_PATH}"
+              echo "Contents of dist/dist-linux:"
+              ls -la dist/dist-linux/
             fi
           fi
           if [ -d dist/dist-windows ]; then
