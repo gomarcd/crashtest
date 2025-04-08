@@ -108,22 +108,28 @@ jobs:
           APP_NAME: ${{ secrets.APP_NAME }}
         run: |
           mkdir -p AppDir/usr/bin \
-                   AppDir/usr/share/applications \
                    AppDir/usr/share/icons/hicolor/256x256/apps
+
           cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
           chmod +x AppDir/usr/bin/${APP_NAME}
+
           cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+          cp build/appicon.png AppDir/${APP_NAME}.png
+
           DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
-          echo "Generating .desktop file..."
-          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/usr/share/applications/${DEB_PKG_NAME}.desktop
-          cat AppDir/usr/share/applications/${DEB_PKG_NAME}.desktop # Log the content
+          echo "Generating .desktop file in AppDir root..."
+          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${DEB_PKG_NAME}.desktop
+          cat AppDir/${DEB_PKG_NAME}.desktop
+
           echo "Creating AppRun for AppImage..."
           echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \"\$HERE/usr/bin/${APP_NAME}\"" > AppDir/AppRun
           chmod +x AppDir/AppRun
-          ln -sf usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png AppDir/.DirIcon # Use symlink for .DirIcon
-          cp build/appicon.png AppDir/${APP_NAME}.png # Copy icon to root for appimagetool finding based on Icon=${APP_NAME}
+
+          ln -sf usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png AppDir/.DirIcon
+
           echo "Creating AppImage..."
           ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+
           echo "Creating Debian package ${DEB_PKG_NAME}..."
           fpm -s dir -t deb \
             -n "${DEB_PKG_NAME}" \
@@ -137,11 +143,13 @@ jobs:
             -d "libgtk-3-0" \
             -d "libwebkit2gtk-4.1-0" \
             -C AppDir \
-            usr/bin/${APP_NAME} \
-            usr/share/applications/${DEB_PKG_NAME}.desktop \
-            usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+            usr/bin/${APP_NAME}=/usr/bin/${APP_NAME} \
+            usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png=/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png \
+            ${DEB_PKG_NAME}.desktop=/usr/share/applications/${DEB_PKG_NAME}.desktop
+
           echo "Moving Debian package..."
           mv "${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
+
           echo "Ensuring read permissions on .deb package..."
           chmod a+r build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
           ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
