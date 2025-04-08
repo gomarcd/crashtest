@@ -107,22 +107,45 @@ jobs:
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
           cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
-          cp build/appicon.png AppDir/${APP_NAME}.png
+          chmod +x AppDir/usr/bin/${APP_NAME}
           cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
-          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${APP_NAME}.desktop
-          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \$HERE/usr/bin/${APP_NAME}" > AppDir/AppRun
-          chmod +x AppDir/AppRun
-          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
           DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
-          echo "Using Debian package name: ${DEB_PKG_NAME}"
-          fpm -s dir -t deb -n "${DEB_PKG_NAME}" -v "${RELEASE_VERSION}" --prefix /usr/local/bin build/bin/"${APP_NAME}"
+          echo "Generating .desktop file..."
+          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/usr/share/applications/${DEB_PKG_NAME}.desktop
+          cat AppDir/usr/share/applications/${DEB_PKG_NAME}.desktop # Log the content
+          echo "Creating AppRun for AppImage..."
+          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \"\$HERE/usr/bin/${APP_NAME}\"" > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          ln -sf usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png AppDir/.DirIcon # Use symlink for .DirIcon
+          cp build/appicon.png AppDir/${APP_NAME}.png # Copy icon to root for appimagetool finding based on Icon=${APP_NAME}
+          echo "Creating AppImage..."
+          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+          echo "Creating Debian package ${DEB_PKG_NAME}..."
+          fpm -s dir -t deb \
+            -n "${DEB_PKG_NAME}" \
+            -v "${RELEASE_VERSION}" \
+            --architecture amd64 \
+            --prefix / \
+            --maintainer "Marc Deschambault <md@gomarcd.dev>" \
+            --description "${APP_NAME}, the minimal API client." \
+            --url "https://github.com/${{ github.repository }}" \
+            --license "MIT" \
+            -d "libgtk-3-0" \
+            -d "libwebkit2gtk-4.1-0" \
+            -C AppDir \
+            usr/bin/${APP_NAME} \
+            usr/share/applications/${DEB_PKG_NAME}.desktop \
+            usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+          echo "Moving Debian package..."
           mv "${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
           echo "Ensuring read permissions on .deb package..."
           chmod a+r build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
-          ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" 
-          
+          ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+
       - name: Verify environment variables
         shell: bash
         run: |
