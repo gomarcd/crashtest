@@ -46,7 +46,7 @@ jobs:
         go-version: "1.23"
         wails-version: "v2.9.0"
         build-platform: ${{ matrix.platform }}
-        build-name: ${{ secrets.APP_NAME }}
+        build-name: ${{ vars.APP_NAME || github.event.repository.name }}
         package: false
 
     - name: Set up Node.js
