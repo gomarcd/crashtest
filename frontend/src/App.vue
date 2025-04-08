@@ -4,7 +4,7 @@
     style="--wails-draggable:drag"
   >
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col pt-1 px-2 pb-2 pt-8 gap-2">
+    <main class="flex-grow h-full flex flex-col pt-1 px-2 pb-2 pt-8 gap-2">
       <div class="flex items-center h-8">
         <div class="relative flex-grow bg-gray-800 border border-gray-700 rounded-md h-8 flex items-center overflow-hidden">
           <!-- Method Selector -->
