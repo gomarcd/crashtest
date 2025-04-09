@@ -356,7 +356,6 @@ jobs:
           run: |
             FLATPAK_SOURCE_DIR="build-flatpak"
             mkdir -p ${FLATPAK_SOURCE_DIR}
-            sudo apt-get install -y imagemagick
             echo "Resizing icon ./appicon.png to 512x512..."
             convert ./appicon.png -resize 512x512 resized-appicon.png
             echo "Copying resized icon to ${FLATPAK_SOURCE_DIR}/"
@@ -367,12 +366,10 @@ jobs:
             cp "${FLATPAK_APP_ID}.desktop" ${FLATPAK_SOURCE_DIR}/
             echo "Copying appdata file to ${FLATPAK_SOURCE_DIR}/"
             cp "${FLATPAK_APP_ID}.appdata.xml" ${FLATPAK_SOURCE_DIR}/
-            echo "Copying icon to ${FLATPAK_SOURCE_DIR}/"
-            cp ./appicon.png ${FLATPAK_SOURCE_DIR}/${FLATPAK_APP_ID}.png
             echo "Contents of ${FLATPAK_SOURCE_DIR}:"
             ls -l ${FLATPAK_SOURCE_DIR}/
         - name: Install Flatpak dependencies
-          run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
+          run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder imagemagick
 
         - name: Setup Flatpak remote (Flathub for Runtimes)
           run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
