@@ -144,41 +144,6 @@ jobs:
           chmod a+r build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
           ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
 
-      - name: Package Linux RPM (Linux only)
-        if: matrix.platform == 'linux/amd64'
-        env:
-          APP_NAME: ${{ secrets.APP_NAME }}
-        run: |
-          echo "Creating RPM package ${DEB_PKG_NAME}..."
-          fpm -s dir -t rpm \
-            -n "${DEB_PKG_NAME}" \
-            -v "${RELEASE_VERSION}" \
-            --architecture x86_64 \
-            --prefix / \
-            --maintainer "Marc Deschambault <md@gomarcd.dev>" \
-            --description "${APP_NAME}, the minimal API client." \
-            --url "https://github.com/${{ github.repository }}" \
-            --license "MIT" \
-            -d "gtk3" \
-            -d "webkit2gtk4.1 >= 2.38" \
-            -C AppDir \
-            usr/bin/${APP_NAME}=/usr/bin/${APP_NAME} \
-            usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png=/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png \
-            ${DEB_PKG_NAME}.desktop=/usr/share/applications/${DEB_PKG_NAME}.desktop
-
-          echo "Moving RPM package..."
-          # FPM defaults to iteration 1 if not specified
-          RPM_FILENAME="${DEB_PKG_NAME}-${RELEASE_VERSION}-1.x86_64.rpm"
-          if [ -f "${RPM_FILENAME}" ]; then
-            mv "${RPM_FILENAME}" build/bin/
-            echo "Ensuring read permissions on .rpm package..."
-            chmod a+r build/bin/"${RPM_FILENAME}"
-            ls -l build/bin/"${RPM_FILENAME}"
-          else
-            echo "Error: RPM file ${RPM_FILENAME} not found after fpm build."
-            exit 1
-          fi
-
       - name: Verify environment variables
         shell: bash
         run: |
@@ -202,21 +167,23 @@ jobs:
       env:
         RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
         APP_NAME: ${{ secrets.APP_NAME }}
+
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
+
         - name: Download Linux build artifact
           uses: actions/download-artifact@v4
           with:
             name: dist-linux
             path: dist/linux-build
-        - name: Install imagemagick for Snap icon resizing
-          run: sudo apt-get update && sudo apt-get install -y imagemagick
+
         - name: Generate snapcraft.yaml
           run: |
             SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
             if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
             echo "Using Snap Name: $SNAP_NAME_LOWER"
+
             cat > snapcraft.yaml <<EOF
             name: ${SNAP_NAME_LOWER}
             version: '${RELEASE_VERSION}'
@@ -229,18 +196,16 @@ jobs:
             grade: stable
             confinement: strict
             base: core22
-            icon: snap/gui/${SNAP_NAME_LOWER}.png
+
             apps:
               ${SNAP_NAME_LOWER}:
                 command: bin/${APP_NAME}
                 extensions: [gnome]
+                desktop: meta/gui/${SNAP_NAME_LOWER}.desktop
                 plugs:
                   - network
                   - home
-                  - desktop
-                  - desktop-legacy
-                  - wayland
-                  - x11
+
             parts:
               app-files:
                 plugin: dump
@@ -248,44 +213,47 @@ jobs:
                 stage-packages:
                   - libwebkit2gtk-4.1-0
                   - libgtk-3-0
-                  - fonts-ubuntu
             EOF
             echo "Generated snapcraft.yaml:"
             cat snapcraft.yaml
-        - name: Create snap/gui directory with desktop file and icon
+
+        - name: Install imagemagick for Snap icon resizing
+          run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+        - name: Create .desktop file and stage files for Snapcraft
           id: prep_snap
           run: |
             SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
             if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
-            mkdir -p snap/gui
-            mkdir -p build-snap-stage/bin
-            cat > snap/gui/${SNAP_NAME_LOWER}.desktop <<EOF
+            STAGE_DIR="build-snap-stage"
+            mkdir -p ${STAGE_DIR}/bin ${STAGE_DIR}/meta/gui
+            cat > ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop <<EOF
             [Desktop Entry]
             Version=1.0
-            Type=Application
             Name=${APP_NAME}
             Comment=${APP_NAME} - The minimal API client.
             Exec=${SNAP_NAME_LOWER}
             Icon=\${SNAP}/meta/gui/${SNAP_NAME_LOWER}.png
             Terminal=false
+            Type=Application
             Categories=Utility;Network;Development;
             EOF
             echo "Generated desktop file:"
-            cat snap/gui/${SNAP_NAME_LOWER}.desktop
-            echo "Copying binary: dist/linux-build/${APP_NAME} to build-snap-stage/bin/${APP_NAME}"
-            cp dist/linux-build/${APP_NAME} build-snap-stage/bin/${APP_NAME}
-            chmod +x build-snap-stage/bin/${APP_NAME}
-            echo "Resizing icon ./appicon.png to 256x256 for Snap..."
-            convert ./appicon.png -resize 256x256 snap/gui/${SNAP_NAME_LOWER}.png
-            echo "Contents of snap/gui:"
-            ls -la snap/gui/
-            echo "Contents of build-snap-stage:"
-            ls -la build-snap-stage/
+            cat ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop
+            echo "Copying binary: dist/linux-build/${APP_NAME} to ${STAGE_DIR}/bin/${APP_NAME}"
+            cp dist/linux-build/${APP_NAME} ${STAGE_DIR}/bin/${APP_NAME}
+            chmod +x ${STAGE_DIR}/bin/${APP_NAME}
+            echo "Resizing icon ./appicon.png to 512x512 for Snap..."
+            convert ./appicon.png -resize 512x512 ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png
+            echo "Contents of ${STAGE_DIR}:"
+            ls -lR ${STAGE_DIR}/
+
         - name: Build Snap using snapcraft action
           uses: snapcore/action-build@v1
           id: snapcraft
           with:
             snapcraft-channel: latest/stable
+
         - name: Upload Snap artifact
           uses: actions/upload-artifact@v4
           with:
@@ -413,7 +381,7 @@ jobs:
             path: ${{ env.APP_NAME }}_${{ env.RELEASE_VERSION }}.flatpak
             if-no-files-found: error
 
-  publish-release:
+  publish:
     needs: [build, build-snap, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
@@ -543,7 +511,7 @@ jobs:
             ${{ steps.prep_files.outputs.checksum_list }}
 
   update-index:
-    needs: publish-release
+    needs: publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
