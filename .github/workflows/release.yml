@@ -213,7 +213,6 @@ jobs:
                 - libwebkit2gtk-4.1-0
                 - libgtk-3-0
               organize:
-                bin/${APP_NAME}: bin/${APP_NAME}
                 meta/gui/${SNAP_NAME_LOWER}.desktop: usr/share/applications/${SNAP_NAME_LOWER}.desktop
                 meta/gui/${SNAP_NAME_LOWER}.png: usr/share/icons/hicolor/256x256/apps/${SNAP_NAME_LOWER}.png
           EOF
@@ -381,10 +380,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
 
       - name: Setup Flatpak remote (Flathub for Runtimes)
-        run: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak using flatpak-builder
-        run: flatpak-builder --force-clean build-dir ${FLATPAK_APP_ID}.yaml --repo=repo
+        run: flatpak-builder --user --force-clean build-dir ${FLATPAK_APP_ID}.yaml --repo=repo
 
       - name: Create Flatpak bundle for release artifact
         run: flatpak build-bundle repo ${APP_NAME}_${RELEASE_VERSION}.flatpak ${FLATPAK_APP_ID}
