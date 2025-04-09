@@ -356,6 +356,11 @@ jobs:
           run: |
             FLATPAK_SOURCE_DIR="build-flatpak"
             mkdir -p ${FLATPAK_SOURCE_DIR}
+            sudo apt-get install -y imagemagick
+            echo "Resizing icon ./appicon.png to 512x512..."
+            convert ./appicon.png -resize 512x512 resized-appicon.png
+            echo "Copying resized icon to ${FLATPAK_SOURCE_DIR}/"
+            cp resized-appicon.png ${FLATPAK_SOURCE_DIR}/${FLATPAK_APP_ID}.png
             echo "Copying binary: dist/linux-build/${APP_NAME} to ${FLATPAK_SOURCE_DIR}/${APP_NAME}"
             cp dist/linux-build/${APP_NAME} ${FLATPAK_SOURCE_DIR}/${APP_NAME}
             echo "Copying desktop file to ${FLATPAK_SOURCE_DIR}/"
