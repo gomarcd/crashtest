@@ -381,7 +381,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: flatpak-package
-            path: ${APP_NAME}_${RELEASE_VERSION}.flatpak
+            path: ${{ env.APP_NAME }}_${{ env.RELEASE_VERSION }}.flatpak
             if-no-files-found: error
 
   publish:
