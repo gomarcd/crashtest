@@ -264,126 +264,126 @@ jobs:
           path: ${{ steps.snapcraft.outputs.snap }}
           if-no-files-found: error
 
-build-flatpak:
-    name: Build Flatpak Package
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
-      APP_NAME: ${{ secrets.APP_NAME }}
-      FLATPAK_APP_ID: ${{ secrets.BUNDLE_ID }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  build-flatpak:
+      name: Build Flatpak Package
+      needs: build
+      runs-on: ubuntu-latest
+      permissions:
+        contents: read
+      env:
+        RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+        APP_NAME: ${{ secrets.APP_NAME }}
+        FLATPAK_APP_ID: ${{ secrets.BUNDLE_ID }}
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
 
-      - name: Download Linux build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-linux
-          path: dist/linux-build
+        - name: Download Linux build artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: dist-linux
+            path: dist/linux-build
 
-      - name: Create Flatpak manifest and metadata files
-        run: |
-          cat > "${FLATPAK_APP_ID}.desktop" <<EOF
-          [Desktop Entry]
-          Name=${{ secrets.APP_NAME }}
-          Exec=${{ secrets.APP_NAME }}
-          Type=Application
-          Icon=${FLATPAK_APP_ID}
-          Terminal=false
-          Categories=Development;Network;Utility;
-          Comment=${{ secrets.APP_NAME }} - The minimal API client
-          EOF
-          cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <component type="desktop-application">
-            <id>${FLATPAK_APP_ID}</id>
-            <name>${APP_NAME}</name>
-            <summary>Fast, minimal API tool</summary>
-            <metadata_license>CC0-1.0</metadata_license>
-            <project_license>MIT</project_license>
-            <description>
-              <p>
-                ${APP_NAME} is a fast, minimal API client tool designed with privacy and security in mind.
-              </p>
-              <p>
-                Features include:
-                - Modern, open source, minimal UI
-                - No paywall, no registration
-                - Set request parameters and see response headers
-                - Cross-platform support
-              </p>
-            </description>
-            <url type="homepage">https://github.com/${{ github.repository }}</url>
-            <developer_name>Marc Deschambault</developer_name>
-            <releases>
-              <release version="${RELEASE_VERSION}" date="$(date +%Y-%m-%d)"/>
-            </releases>
-            <content_rating type="oars-1.1"/>
-          </component>
-          EOF
-          cat > "${FLATPAK_APP_ID}.yaml" <<EOF
-          app-id: ${FLATPAK_APP_ID}
-          runtime: org.gnome.Platform
-          runtime-version: '46'
-          sdk: org.gnome.Sdk
-          command: ${APP_NAME}
-          finish-args:
-            - --share=ipc
-            - --socket=fallback-x11
-            - --socket=wayland
-            - --share=network
-            - --filesystem=home
-            - --device=dri
-            - --talk-name=org.freedesktop.portal.Hostfs
-          modules:
-            - name: crashtest
-              buildsystem: simple
-              build-commands:
-                - install -Dm755 ${APP_NAME} /app/bin/${APP_NAME}
-                - install -Dm644 ${FLATPAK_APP_ID}.desktop /app/share/applications/${FLATPAK_APP_ID}.desktop
-                - install -Dm644 ${FLATPAK_APP_ID}.png /app/share/icons/hicolor/256x256/apps/${FLATPAK_APP_ID}.png
-                - install -Dm644 ${FLATPAK_APP_ID}.appdata.xml /app/share/metainfo/${FLATPAK_APP_ID}.appdata.xml
-              sources:
-                - type: dir
-                  path: build-flatpak
-          EOF
-          echo "Created Flatpak files:"
-          ls -la *.desktop *.appdata.xml *.yaml
-      - name: Prepare files for Flatpak
-        run: |
-          FLATPAK_SOURCE_DIR="build-flatpak"
-          mkdir -p ${FLATPAK_SOURCE_DIR}
-          echo "Copying binary: dist/linux-build/${APP_NAME} to ${FLATPAK_SOURCE_DIR}/${APP_NAME}"
-          cp dist/linux-build/${APP_NAME} ${FLATPAK_SOURCE_DIR}/${APP_NAME}
-          echo "Copying desktop file to ${FLATPAK_SOURCE_DIR}/"
-          cp "${FLATPAK_APP_ID}.desktop" ${FLATPAK_SOURCE_DIR}/
-          echo "Copying appdata file to ${FLATPAK_SOURCE_DIR}/"
-          cp "${FLATPAK_APP_ID}.appdata.xml" ${FLATPAK_SOURCE_DIR}/
-          echo "Copying icon to ${FLATPAK_SOURCE_DIR}/"
-          cp ./appicon.png ${FLATPAK_SOURCE_DIR}/${FLATPAK_APP_ID}.png
-          echo "Contents of ${FLATPAK_SOURCE_DIR}:"
-          ls -l ${FLATPAK_SOURCE_DIR}/
-      - name: Install Flatpak dependencies
-        run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
+        - name: Create Flatpak manifest and metadata files
+          run: |
+            cat > "${FLATPAK_APP_ID}.desktop" <<EOF
+            [Desktop Entry]
+            Name=${{ secrets.APP_NAME }}
+            Exec=${{ secrets.APP_NAME }}
+            Type=Application
+            Icon=${FLATPAK_APP_ID}
+            Terminal=false
+            Categories=Development;Network;Utility;
+            Comment=${{ secrets.APP_NAME }} - The minimal API client
+            EOF
+            cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
+            <?xml version="1.0" encoding="UTF-8"?>
+            <component type="desktop-application">
+              <id>${FLATPAK_APP_ID}</id>
+              <name>${APP_NAME}</name>
+              <summary>Fast, minimal API tool</summary>
+              <metadata_license>CC0-1.0</metadata_license>
+              <project_license>MIT</project_license>
+              <description>
+                <p>
+                  ${APP_NAME} is a fast, minimal API client tool designed with privacy and security in mind.
+                </p>
+                <p>
+                  Features include:
+                  - Modern, open source, minimal UI
+                  - No paywall, no registration
+                  - Set request parameters and see response headers
+                  - Cross-platform support
+                </p>
+              </description>
+              <url type="homepage">https://github.com/${{ github.repository }}</url>
+              <developer_name>Marc Deschambault</developer_name>
+              <releases>
+                <release version="${RELEASE_VERSION}" date="$(date +%Y-%m-%d)"/>
+              </releases>
+              <content_rating type="oars-1.1"/>
+            </component>
+            EOF
+            cat > "${FLATPAK_APP_ID}.yaml" <<EOF
+            app-id: ${FLATPAK_APP_ID}
+            runtime: org.gnome.Platform
+            runtime-version: '46'
+            sdk: org.gnome.Sdk
+            command: ${APP_NAME}
+            finish-args:
+              - --share=ipc
+              - --socket=fallback-x11
+              - --socket=wayland
+              - --share=network
+              - --filesystem=home
+              - --device=dri
+              - --talk-name=org.freedesktop.portal.Hostfs
+            modules:
+              - name: crashtest
+                buildsystem: simple
+                build-commands:
+                  - install -Dm755 ${APP_NAME} /app/bin/${APP_NAME}
+                  - install -Dm644 ${FLATPAK_APP_ID}.desktop /app/share/applications/${FLATPAK_APP_ID}.desktop
+                  - install -Dm644 ${FLATPAK_APP_ID}.png /app/share/icons/hicolor/256x256/apps/${FLATPAK_APP_ID}.png
+                  - install -Dm644 ${FLATPAK_APP_ID}.appdata.xml /app/share/metainfo/${FLATPAK_APP_ID}.appdata.xml
+                sources:
+                  - type: dir
+                    path: build-flatpak
+            EOF
+            echo "Created Flatpak files:"
+            ls -la *.desktop *.appdata.xml *.yaml
+        - name: Prepare files for Flatpak
+          run: |
+            FLATPAK_SOURCE_DIR="build-flatpak"
+            mkdir -p ${FLATPAK_SOURCE_DIR}
+            echo "Copying binary: dist/linux-build/${APP_NAME} to ${FLATPAK_SOURCE_DIR}/${APP_NAME}"
+            cp dist/linux-build/${APP_NAME} ${FLATPAK_SOURCE_DIR}/${APP_NAME}
+            echo "Copying desktop file to ${FLATPAK_SOURCE_DIR}/"
+            cp "${FLATPAK_APP_ID}.desktop" ${FLATPAK_SOURCE_DIR}/
+            echo "Copying appdata file to ${FLATPAK_SOURCE_DIR}/"
+            cp "${FLATPAK_APP_ID}.appdata.xml" ${FLATPAK_SOURCE_DIR}/
+            echo "Copying icon to ${FLATPAK_SOURCE_DIR}/"
+            cp ./appicon.png ${FLATPAK_SOURCE_DIR}/${FLATPAK_APP_ID}.png
+            echo "Contents of ${FLATPAK_SOURCE_DIR}:"
+            ls -l ${FLATPAK_SOURCE_DIR}/
+        - name: Install Flatpak dependencies
+          run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
 
-      - name: Setup Flatpak remote (Flathub for Runtimes)
-        run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        - name: Setup Flatpak remote (Flathub for Runtimes)
+          run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Build Flatpak using flatpak-builder
-        run: flatpak-builder --user --install-deps-from=flathub --force-clean build-dir ${FLATPAK_APP_ID}.yaml --repo=repo
+        - name: Build Flatpak using flatpak-builder
+          run: flatpak-builder --user --install-deps-from=flathub --force-clean build-dir ${FLATPAK_APP_ID}.yaml --repo=repo
 
-      - name: Create Flatpak bundle for release artifact
-        run: flatpak build-bundle repo ${APP_NAME}_${RELEASE_VERSION}.flatpak ${FLATPAK_APP_ID} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+        - name: Create Flatpak bundle for release artifact
+          run: flatpak build-bundle repo ${APP_NAME}_${RELEASE_VERSION}.flatpak ${FLATPAK_APP_ID} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Upload Flatpak artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: flatpak-package
-          path: ${APP_NAME}_${RELEASE_VERSION}.flatpak
-          if-no-files-found: error
+        - name: Upload Flatpak artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: flatpak-package
+            path: ${APP_NAME}_${RELEASE_VERSION}.flatpak
+            if-no-files-found: error
 
   publish:
     needs: [build, build-snap, build-flatpak]
