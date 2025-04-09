@@ -1,4 +1,270 @@
-  build-flatpak:
+name: Release
+
+on:
+  push:
+    tags: [ v* ]
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - platform: 'darwin/universal'
+            os: 'macos-latest'
+            artifact_suffix: 'mac'
+          - platform: 'linux/amd64'
+            os: 'ubuntu-latest'
+            artifact_suffix: 'linux'
+          - platform: 'windows/amd64'
+            os: 'windows-latest'
+            artifact_suffix: 'windows'
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+
+    outputs:
+      release_version: ${{ steps.setup_vars.outputs.release_version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup version variables
+        id: setup_vars
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          YEAR=$(date +%Y)
+          RELEASE_VERSION="${YEAR}.${VERSION}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "RELEASE_YEAR=${YEAR}" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "release_version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "Tag version: ${VERSION}"
+          echo "Release year: ${YEAR}"
+          echo "Full release version: ${RELEASE_VERSION}"
+
+      - name: Prepare gon configuration
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p build/darwin
+          cp gon-sign.json build/darwin/gon-sign.json
+          cp gon-notarize.json build/darwin/gon-notarize.json
+          envsubst < build/darwin/gon-sign.json > build/darwin/gon-sign-temp.json && mv build/darwin/gon-sign-temp.json build/darwin/gon-sign.json
+          envsubst < build/darwin/gon-notarize.json > build/darwin/gon-notarize-temp.json && mv build/darwin/gon-notarize-temp.json build/darwin/gon-notarize.json
+        env:
+          APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
+          APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Copy app icon
+        shell: bash
+        run: |
+          mkdir -p build
+          cp ./appicon.png build/appicon.png
+
+      - name: Wails Build
+        uses: gomarcd/wails-build-action@d926ec814f69d88d69f5bf79487a74df7549d548
+        with:
+          go-version: "1.23"
+          wails-version: "v2.9.0"
+          build-name: ${{ secrets.APP_NAME }}
+          build-platform: ${{ matrix.platform }}
+          package: false
+          nsis: ${{ matrix.os == 'windows-latest' }}
+          sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
+          sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          sign-macos-app-cert: ${{ secrets.APPLE_CERTIFICATE }}
+          sign-macos-app-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign-macos-installer-cert: ${{ secrets.APPLE_CERTIFICATE }}
+          sign-macos-installer-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
+          sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
+          sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      - name: Install dependencies for packaging (Linux only)
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev gcc make file desktop-file-utils libfuse2
+          sudo gem install --no-document fpm
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+
+      - name: Package Linux AppImage and .deb (Linux only)
+        if: matrix.platform == 'linux/amd64'
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+        run: |
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/bin/${APP_NAME} AppDir/usr/bin/${APP_NAME}
+          chmod +x AppDir/usr/bin/${APP_NAME}
+          cp build/appicon.png AppDir/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
+          cp build/appicon.png AppDir/${APP_NAME}.png
+          DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "Generating .desktop file in AppDir root..."
+          echo -e "[Desktop Entry]\nName=${APP_NAME}\nExec=${APP_NAME}\nType=Application\nIcon=${APP_NAME}\nTerminal=false\nCategories=Utility;" > AppDir/${DEB_PKG_NAME}.desktop
+          cat AppDir/${DEB_PKG_NAME}.desktop
+          echo "Creating AppRun for AppImage..."
+          echo -e "#!/bin/sh\nHERE=\$(dirname \$(readlink -f \$0))\nexec \"\$HERE/usr/bin/${APP_NAME}\"" > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          ln -sf usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png AppDir/.DirIcon
+          echo "Creating AppImage..."
+          ./appimagetool AppDir build/bin/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage
+          echo "Creating Debian package ${DEB_PKG_NAME}..."
+          fpm -s dir -t deb \
+            -n "${DEB_PKG_NAME}" \
+            -v "${RELEASE_VERSION}" \
+            --architecture amd64 \
+            --prefix / \
+            --maintainer "Marc Deschambault <md@gomarcd.dev>" \
+            --description "${APP_NAME}, the minimal API client." \
+            --url "https://github.com/${{ github.repository }}" \
+            --license "MIT" \
+            -d "libgtk-3-0" \
+            -d "libwebkit2gtk-4.1-0" \
+            -C AppDir \
+            usr/bin/${APP_NAME}=/usr/bin/${APP_NAME} \
+            usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png=/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png \
+            ${DEB_PKG_NAME}.desktop=/usr/share/applications/${DEB_PKG_NAME}.desktop
+          echo "Moving Debian package..."
+          mv "${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb" build/bin/
+          echo "Ensuring read permissions on .deb package..."
+          chmod a+r build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+          ls -l build/bin/"${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+
+      - name: Verify environment variables
+        shell: bash
+        run: |
+          echo "VERSION: $VERSION"
+          echo "RELEASE_YEAR: $RELEASE_YEAR"
+          echo "RELEASE_VERSION: $RELEASE_VERSION"
+
+      - name: Archive build outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.artifact_suffix }}
+          path: build/bin/
+          if-no-files-found: error
+
+  build-snap:
+    name: Build Snap Package
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Linux build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-linux
+          path: dist/linux-build
+
+      - name: Generate snapcraft.yaml
+        run: |
+          SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+          if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
+          echo "Using Snap Name: $SNAP_NAME_LOWER"
+
+          cat > snapcraft.yaml <<EOF
+          name: ${SNAP_NAME_LOWER}
+          version: '${RELEASE_VERSION}'
+          summary: ${APP_NAME} - The minimal API client.
+          description: |
+            ${APP_NAME} is a fast, minimal API client tool designed with privacy
+            and security in mind. Features include: Modern, open source, minimal UI.
+            No paywall, no registration. Set request parameters and see response headers.
+            Cross-platform support.
+          grade: stable
+          confinement: strict
+          base: core22
+
+          apps:
+            ${SNAP_NAME_LOWER}:
+              command: bin/${APP_NAME}
+              extensions: [gnome]
+              plugs:
+                - network
+                - home
+
+          parts:
+            app-files:
+              plugin: dump
+              source: build-snap-stage
+              stage-packages:
+                - libwebkit2gtk-4.1-0
+                - libgtk-3-0
+              organize:
+                meta/gui/${SNAP_NAME_LOWER}.desktop: usr/share/applications/${SNAP_NAME_LOWER}.desktop
+                meta/gui/${SNAP_NAME_LOWER}.png: usr/share/icons/hicolor/256x256/apps/${SNAP_NAME_LOWER}.png
+          EOF
+          echo "Generated snapcraft.yaml:"
+          cat snapcraft.yaml
+
+      - name: Create .desktop file and stage files for Snapcraft
+        id: prep_snap
+        run: |
+          SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+          if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
+          STAGE_DIR="build-snap-stage"
+          mkdir -p ${STAGE_DIR}/bin ${STAGE_DIR}/meta/gui
+
+          cat > ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop <<EOF
+          [Desktop Entry]
+          Version=1.0
+          Name=${APP_NAME}
+          Comment=${APP_NAME} - The minimal API client.
+          Exec=${SNAP_NAME_LOWER}
+          Icon=\${SNAP}/usr/share/icons/hicolor/256x256/apps/${SNAP_NAME_LOWER}.png
+          Terminal=false
+          Type=Application
+          Categories=Utility;Network;Development;
+          EOF
+          echo "Generated desktop file:"
+          cat ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop
+
+          echo "Copying binary: dist/linux-build/${APP_NAME} to ${STAGE_DIR}/bin/${APP_NAME}"
+          cp dist/linux-build/${APP_NAME} ${STAGE_DIR}/bin/${APP_NAME}
+          chmod +x ${STAGE_DIR}/bin/${APP_NAME}
+
+          echo "Copying icon file from appicon.png to ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png"
+          cp appicon.png ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png
+
+          echo "Contents of ${STAGE_DIR}:"
+          ls -lR ${STAGE_DIR}/
+
+      - name: Build Snap using snapcraft action
+        uses: snapcore/action-build@v1
+        id: snapcraft
+        with:
+          snapcraft-channel: latest/stable
+
+      - name: Upload Snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-package
+          path: ${{ steps.snapcraft.outputs.snap }}
+          if-no-files-found: error
+
+build-flatpak:
     name: Build Flatpak Package
     needs: build
     runs-on: ubuntu-latest
@@ -30,7 +296,6 @@
           Categories=Development;Network;Utility;
           Comment=${{ secrets.APP_NAME }} - The minimal API client
           EOF
-
           cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <component type="desktop-application">
@@ -59,7 +324,6 @@
             <content_rating type="oars-1.1"/>
           </component>
           EOF
-
           cat > "${FLATPAK_APP_ID}.yaml" <<EOF
           app-id: ${FLATPAK_APP_ID}
           runtime: org.gnome.Platform
@@ -86,30 +350,22 @@
                 - type: dir
                   path: build-flatpak
           EOF
-
           echo "Created Flatpak files:"
           ls -la *.desktop *.appdata.xml *.yaml
-
       - name: Prepare files for Flatpak
         run: |
           FLATPAK_SOURCE_DIR="build-flatpak"
           mkdir -p ${FLATPAK_SOURCE_DIR}
-
           echo "Copying binary: dist/linux-build/${APP_NAME} to ${FLATPAK_SOURCE_DIR}/${APP_NAME}"
           cp dist/linux-build/${APP_NAME} ${FLATPAK_SOURCE_DIR}/${APP_NAME}
-
           echo "Copying desktop file to ${FLATPAK_SOURCE_DIR}/"
           cp "${FLATPAK_APP_ID}.desktop" ${FLATPAK_SOURCE_DIR}/
-
           echo "Copying appdata file to ${FLATPAK_SOURCE_DIR}/"
           cp "${FLATPAK_APP_ID}.appdata.xml" ${FLATPAK_SOURCE_DIR}/
-
           echo "Copying icon to ${FLATPAK_SOURCE_DIR}/"
           cp ./appicon.png ${FLATPAK_SOURCE_DIR}/${FLATPAK_APP_ID}.png
-
           echo "Contents of ${FLATPAK_SOURCE_DIR}:"
           ls -l ${FLATPAK_SOURCE_DIR}/
-
       - name: Install Flatpak dependencies
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
 
@@ -128,3 +384,174 @@
           name: flatpak-package
           path: ${APP_NAME}_${RELEASE_VERSION}.flatpak
           if-no-files-found: error
+
+  publish:
+    needs: [build, build-snap, build-flatpak]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Download build artifacts (AppImage, Deb, Win, Mac)
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Download Snap artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: snap-package
+          path: dist/snap-build
+
+      - name: Download Flatpak artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flatpak-package
+          path: dist/flatpak-build
+
+      - name: Prepare Release Files and Generate Body Checksums
+        id: prep_files
+        shell: bash
+        run: |
+          if [ -z "$APP_NAME" ]; then echo "Error: APP_NAME not set."; exit 1; fi
+          mkdir release
+          CHECKSUM_BODY_DATA="### Checksums\n\n| File | SHA256 |\n|---|---|\n"
+          DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "Processing downloaded artifacts..."
+          if [ -d dist/dist-linux ]; then
+            APPIMAGE_SRC_PATH="dist/dist-linux/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage"
+            if [ -f "${APPIMAGE_SRC_PATH}" ]; then mv "${APPIMAGE_SRC_PATH}" "release/"; else echo "Warning: AppImage not found"; fi
+            DEB_SRC_PATH="dist/dist-linux/${DEB_PKG_NAME}_${RELEASE_VERSION}_amd64.deb"
+            if [ -f "${DEB_SRC_PATH}" ]; then mv "${DEB_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"; else echo "Warning: Debian package not found"; fi
+          else echo "Warning: dist/dist-linux directory not found"; fi
+          if [ -d dist/dist-windows ]; then
+            WIN_SRC_PATH="dist/dist-windows/${APP_NAME}-amd64-installer.exe"
+            if [ -f "${WIN_SRC_PATH}" ]; then mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"; else echo "Warning: Windows installer not found"; fi
+          else echo "Warning: dist/dist-windows directory not found"; fi
+          if [ -d dist/dist-mac ]; then
+            MAC_SRC_PATH="dist/dist-mac/${APP_NAME}.dmg"
+            if [ -f "${MAC_SRC_PATH}" ]; then mv "${MAC_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"; else echo "Warning: Mac DMG not found"; fi
+          else echo "Warning: dist/dist-mac directory not found"; fi
+          if [ -d dist/snap-build ]; then
+            SNAP_FILE=$(find dist/snap-build -maxdepth 1 -name '*.snap' -print -quit)
+            if [ -n "$SNAP_FILE" ] && [ -f "$SNAP_FILE" ]; then
+              SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+              if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
+              mv "$SNAP_FILE" "release/${SNAP_NAME_LOWER}_${RELEASE_VERSION}_amd64.snap"
+              echo "Found and moved Snap package: $SNAP_FILE"
+            else echo "Warning: Snap package not found in dist/snap-build"; ls -la dist/snap-build/; fi
+          else echo "Warning: dist/snap-build directory not found"; fi
+          if [ -d dist/flatpak-build ]; then
+            FLATPAK_FILE=$(find dist/flatpak-build -maxdepth 1 -name '*.flatpak' -print -quit)
+            if [ -n "$FLATPAK_FILE" ] && [ -f "$FLATPAK_FILE" ]; then
+              mv "$FLATPAK_FILE" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.flatpak"
+              echo "Found and moved Flatpak package: $FLATPAK_FILE"
+            else echo "Warning: Flatpak package not found in dist/flatpak-build"; ls -la dist/flatpak-build/; fi
+          else echo "Warning: dist/flatpak-build directory not found"; fi
+          pushd release > /dev/null
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              CHECKSUM_BODY_DATA+=$(sha256sum "$file" | awk '{print "| `" $2 "` | `" $1 "` |"}')"\n"
+            fi
+          done
+          popd > /dev/null
+          echo "checksum_list<<EOF" >> $GITHUB_OUTPUT
+          echo -e "${CHECKSUM_BODY_DATA}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "--- Final contents of release directory ---"
+          ls -la release
+          echo "-------------------------------------------"
+
+      - name: Generate Checksum Files
+        shell: bash
+        run: |
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
+          done
+          cd ..
+
+      - name: Import GPG key
+        shell: bash
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then echo "gpg_skipped=true" >> $GITHUB_ENV; else echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import && echo "gpg_skipped=false" >> $GITHUB_ENV || (echo "GPG import failed"; exit 1); fi
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: GPG Sign Artifacts
+        if: env.gpg_skipped != 'true'
+        shell: bash
+        run: |
+          cd release
+          for file in *; do
+            if [[ -f "$file" && ! "$file" == *.sig && ! "$file" == *.sha256 ]]; then
+              echo "Signing file: $file"
+              gpg --batch --yes --detach-sign --output "$file.sig" "$file"
+            fi
+          done
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: release/**
+          body: |
+            [Changelog ${{ env.RELEASE_VERSION }}](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }})
+
+            For verification instructions, see [Security Documentation](https://github.com/${{ github.repository }}/blob/main/README.md#security).
+
+            ---
+            ${{ steps.prep_files.outputs.checksum_list }}
+
+  update-index:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout landing-page branch
+        uses: actions/checkout@v3
+        with:
+          ref: landing-page
+          fetch-depth: 0
+
+      - name: Update download links in index.html
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          YEAR=$(date +%Y)
+          RELEASE_VERSION="${YEAR}.${VERSION}"
+          APP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
+          SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+          if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
+
+          echo "Updating download links using TAG: ${TAG} and RELEASE_VERSION: ${RELEASE_VERSION}"
+          sed -i -E "/id=\"download-windows\"/ s~href=\"[^\"]*\"~href=\"https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe\"~g" landing-page/index.html
+          sed -i -E "/id=\"download-mac\"/ s~href=\"[^\"]*\"~href=\"https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${APP_NAME}_${RELEASE_VERSION}_universal.dmg\"~g" landing-page/index.html
+          sed -i -E "/id=\"download-linux\"/ s~href=\"[^\"]*\"~href=\"https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${APP_NAME}_${RELEASE_VERSION}_amd64.AppImage\"~g" landing-page/index.html
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add landing-page/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Update download links for release ${TAG}"
+            git push origin landing-page
+          else
+            echo "No changes to commit"
+          fi
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
