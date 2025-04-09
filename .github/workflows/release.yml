@@ -277,13 +277,13 @@ jobs:
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
-
         - name: Download Linux build artifact
           uses: actions/download-artifact@v4
           with:
             name: dist-linux
             path: dist/linux-build
-
+        - name: Install build dependencies
+          run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder imagemagick
         - name: Create Flatpak manifest and metadata files
           run: |
             cat > "${FLATPAK_APP_ID}.desktop" <<EOF
@@ -368,9 +368,6 @@ jobs:
             cp "${FLATPAK_APP_ID}.appdata.xml" ${FLATPAK_SOURCE_DIR}/
             echo "Contents of ${FLATPAK_SOURCE_DIR}:"
             ls -l ${FLATPAK_SOURCE_DIR}/
-        - name: Install Flatpak dependencies
-          run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder imagemagick
-
         - name: Setup Flatpak remote (Flathub for Runtimes)
           run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
