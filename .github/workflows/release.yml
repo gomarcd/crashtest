@@ -219,6 +219,9 @@ jobs:
           echo "Generated snapcraft.yaml:"
           cat snapcraft.yaml
 
+      - name: Install imagemagick for Snap icon resizing
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
       - name: Create .desktop file and stage files for Snapcraft
         id: prep_snap
         run: |
@@ -226,28 +229,25 @@ jobs:
           if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
           STAGE_DIR="build-snap-stage"
           mkdir -p ${STAGE_DIR}/bin ${STAGE_DIR}/meta/gui
-
           cat > ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop <<EOF
           [Desktop Entry]
           Version=1.0
           Name=${APP_NAME}
           Comment=${APP_NAME} - The minimal API client.
           Exec=${SNAP_NAME_LOWER}
-          Icon=\${SNAP}/usr/share/icons/hicolor/256x256/apps/${SNAP_NAME_LOWER}.png
+          # Use only the icon name (base name without extension)
+          Icon=${SNAP_NAME_LOWER}
           Terminal=false
           Type=Application
           Categories=Utility;Network;Development;
           EOF
           echo "Generated desktop file:"
           cat ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop
-
           echo "Copying binary: dist/linux-build/${APP_NAME} to ${STAGE_DIR}/bin/${APP_NAME}"
           cp dist/linux-build/${APP_NAME} ${STAGE_DIR}/bin/${APP_NAME}
           chmod +x ${STAGE_DIR}/bin/${APP_NAME}
-
-          echo "Copying icon file from appicon.png to ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png"
-          cp appicon.png ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png
-
+          echo "Resizing icon ./appicon.png to 512x512 for Snap..."
+          convert ./appicon.png -resize 512x512 ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png
           echo "Contents of ${STAGE_DIR}:"
           ls -lR ${STAGE_DIR}/
 
