@@ -2,9 +2,11 @@
   <div
     class="h-full flex flex-col bg-gray-900 text-gray-200"
     style="--wails-draggable:drag"
-    :class="{ 'non-mac-fix': isNonMac }"
   >
-    <main class="flex-grow h-full flex flex-col pt-1 px-2 pb-2 pt-8 gap-2">
+    <main
+      class="flex-grow h-full flex flex-col px-2 gap-2"
+      :class="isNonMac ? 'pt-3 pb-2' : 'pt-8 pb-2'"
+    >
       <div class="flex items-center h-8">
         <div class="relative flex-grow bg-gray-800 border border-gray-700 rounded-md h-8 flex items-center overflow-hidden">
           <!-- Method Selector -->
@@ -379,9 +381,3 @@ async function sendRequest() {
   }
 }
 </script>
-
-<style>
-.non-mac-fix {
-  margin-top: -8px;
-}
-</style>
