@@ -203,6 +203,7 @@
             <div
               v-if="activeResponseTab === 'body' && response"
               class="h-[calc(100%-35px)] overflow-auto"
+              style="--wails-draggable:none;"
             >
               <pre
                 v-if="formattedResponse"
