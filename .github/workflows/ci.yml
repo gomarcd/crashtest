@@ -19,22 +19,16 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        platform: ['linux/amd64', 'darwin/universal', 'windows/amd64']
-        exclude:
-          - os: macos-latest
-            platform: 'linux/amd64'
-          - os: macos-latest
-            platform: 'windows/amd64'
+        include:
           - os: ubuntu-latest
-            platform: 'darwin/universal'
-          - os: ubuntu-latest
-            platform: 'windows/amd64'
-          - os: windows-latest
             platform: 'linux/amd64'
-          - os: windows-latest
+            artifact_suffix: 'linux'
+          - os: macos-latest
             platform: 'darwin/universal'
-
+            artifact_suffix: 'mac'
+          - os: windows-latest
+            platform: 'windows/amd64'
+            artifact_suffix: 'windows'
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -52,7 +46,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ${{ replace(matrix.platform, '/', '-') }}-test-build
+          name: ${{ matrix.artifact_suffix }}-test-build
           path: build/bin/
           retention-days: 5
 
