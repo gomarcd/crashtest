@@ -49,6 +49,13 @@ jobs:
         build-name: ${{ vars.APP_NAME || github.event.repository.name }}
         package: false
 
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: ${{ matrix.platform }}-test-build
+        path: build/bin/
+        retention-days: 5
+
     - name: Set up Node.js
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
