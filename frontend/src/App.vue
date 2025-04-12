@@ -30,6 +30,7 @@
             v-model="url" 
             placeholder="Enter request URL" 
             class="flex-grow bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0"
+            style="--wails-draggable:none;"
           >
           
           <button 
