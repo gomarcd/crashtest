@@ -10,16 +10,12 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
-//go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
 	app := NewApp()
-
-	// Create API service
 	apiService := NewAPIService()
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "Crashtest",
 		Width:  1024,
@@ -36,7 +32,7 @@ func main() {
 	             LightModeTitleBar:  windows.RGB(240, 240, 240),
 	             LightModeTitleText: windows.RGB(20, 20, 20),
 	             LightModeBorder:    windows.RGB(240, 240, 240),
-	             DarkModeTitleBarInactive:   windows.RGB(30, 30, 37),
+	             DarkModeTitleBarInactive:   windows.RGB(18, 24, 38),
 	             DarkModeTitleTextInactive:  windows.RGB(128, 128, 128),
 	             DarkModeBorderInactive:     windows.RGB(30, 30, 37),
 	        },
