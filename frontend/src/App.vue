@@ -2,8 +2,8 @@
   <div
     class="h-full flex flex-col bg-gray-900 text-gray-200"
     style="--wails-draggable:drag"
+    :class="{ 'non-mac-fix': isNonMac }"
   >
-    <!-- Main Content -->
     <main class="flex-grow h-full flex flex-col pt-1 px-2 pb-2 pt-8 gap-2">
       <div class="flex items-center h-8">
         <div class="relative flex-grow bg-gray-800 border border-gray-700 rounded-md h-8 flex items-center overflow-hidden">
@@ -24,14 +24,12 @@
             </select>
           </div>
           
-          <!-- URL Input -->
           <input 
             v-model="url" 
             placeholder="Enter request URL" 
             class="flex-grow bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0"
           >
           
-          <!-- Send Button (Paper Airplane Icon) -->
           <button 
             class="h-full px-3 text-gray-400 hover:text-indigo-400 transition-colors focus:outline-none" 
             :disabled="!url"
@@ -50,7 +48,6 @@
         </div>
       </div>
       
-      <!-- Request/Response Section -->
       <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
         <!-- Request Panel -->
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800">
@@ -70,7 +67,6 @@
               </button>
             </div>
             
-            <!-- Headers Tab -->
             <div
               v-if="activeTab === 'headers'"
               class="p-4"
@@ -112,7 +108,6 @@
               </button>
             </div>
             
-            <!-- Params Tab -->
             <div
               v-if="activeTab === 'params'"
               class="p-4"
@@ -154,7 +149,6 @@
               </button>
             </div>
             
-            <!-- Body Tab -->
             <div
               v-if="activeTab === 'body'"
               class="h-full"
@@ -168,7 +162,6 @@
           </div>
         </div>
         
-        <!-- Response Panel -->
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800">
           <div class="flex items-center px-4 py-2 font-medium border-b border-gray-700">
             <span>Response</span>
@@ -204,7 +197,6 @@
               </button>
             </div>
             
-            <!-- Body Tab -->
             <div
               v-if="activeResponseTab === 'body' && response"
               class="h-[calc(100%-35px)] overflow-auto"
@@ -221,7 +213,6 @@
               </div>
             </div>
             
-            <!-- Headers Tab -->
             <div
               v-if="activeResponseTab === 'headers' && response"
               class="p-4 overflow-auto h-[calc(100%-35px)]"
@@ -268,8 +259,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Header, QueryParam, RequestConfig, APIResponse, REQUEST_METHODS } from './types';
+import { Environment } from '../wailsjs/runtime/runtime';
 
 declare global {
   interface Window {
@@ -286,6 +278,12 @@ declare global {
   }
 }
 
+const isNonMac = ref(false);
+onMounted(async () => {
+  const env = await Environment();
+  isNonMac.value = env.platform.toLowerCase() !== 'darwin';
+});
+
 const selectedMethod = ref('GET');
 const url = ref('https://jsonplaceholder.typicode.com/users');
 const activeTab = ref('body');
@@ -294,6 +292,7 @@ const headersList = ref<Header[]>([{ key: '', value: '', enabled: true }]);
 const params = ref<QueryParam[]>([{ key: '', value: '', enabled: true }]);
 const requestBody = ref('');
 const response = ref<APIResponse | null>(null);
+
 const headers = computed<Record<string, string>>(() => {
   return headersList.value
     .filter(h => h.enabled && h.key.trim() !== '')
@@ -325,15 +324,12 @@ const statusColorClass = computed(() => {
 
 const formattedResponse = computed(() => {
   if (!response.value || response.value.body === null) return '';
-
   const body = response.value.body;
-
   if (typeof body === 'string') {
     return body;
   } else if (typeof body === 'object') {
     return JSON.stringify(body, null, 2);
   }
-
   return '';
 });
 
@@ -376,10 +372,16 @@ async function sendRequest() {
     response.value = {
       statusCode: 0,
       headers: {},
-      body: `Error: ${error instanceof Error ? error.message : String(error)}`, // Matches `string | object | null`
+      body: `Error: ${error instanceof Error ? error.message : String(error)}`,
       timeMs: 0,
       error: error instanceof Error ? error.message : String(error),
     };
   }
 }
 </script>
+
+<style>
+.non-mac-fix {
+  margin-top: -8px;
+}
+</style>
