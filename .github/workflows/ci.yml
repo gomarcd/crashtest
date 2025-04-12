@@ -10,7 +10,7 @@ on:
       - '.github/**'
       - 'LICENSE'
       - 'landing-page/**'
-      - 'build/**' 
+      - 'build/**'
       - 'screenshot.png'
   pull_request:
     branches: [ main ]
@@ -38,44 +38,44 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
 
-    - name: Wails Build
-      uses: gomarcd/wails-build-action@d926ec814f69d88d69f5bf79487a74df7549d548
-      with:
-        go-version: "1.23"
-        wails-version: "v2.9.0"
-        build-platform: ${{ matrix.platform }}
-        build-name: ${{ vars.APP_NAME || github.event.repository.name }}
-        package: false
+      - name: Wails Build
+        uses: gomarcd/wails-build-action@d926ec814f69d88d69f5bf79487a74df7549d548
+        with:
+          go-version: "1.23"
+          wails-version: "v2.9.0"
+          build-platform: ${{ matrix.platform }}
+          build-name: ${{ vars.APP_NAME || github.event.repository.name }}
+          package: false
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-      with:
-        name: ${{ matrix.platform }}-test-build
-        path: build/bin/
-        retention-days: 5
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ replace(matrix.platform, '/', '-') }}-test-build
+          path: build/bin/
+          retention-days: 5
 
-    - name: Set up Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-    - name: Install Frontend dependencies
-      working-directory: frontend
-      run: npm ci
+      - name: Install Frontend dependencies
+        working-directory: frontend
+        run: npm ci
 
-    - name: Backend Lint
-      uses: golangci/golangci-lint-action@9551b25870123cbad297208ba05e4f0f2b0ffd59
-      with:
-        version: latest
-        args: --timeout=5m
+      - name: Backend Lint
+        uses: golangci/golangci-lint-action@9551b25870123cbad297208ba05e4f0f2b0ffd59
+        with:
+          version: latest
+          args: --timeout=5m
 
-    - name: Frontend Lint
-      working-directory: frontend
-      run: npm run lint -- --fix
+      - name: Frontend Lint
+        working-directory: frontend
+        run: npm run lint -- --fix
 
-    - name: Go Tests
-      run: go test ./... -v
+      - name: Go Tests
+        run: go test ./... -v
