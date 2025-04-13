@@ -47,8 +47,18 @@
       <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col">
           <div class="h-[calc(100%-40px)]">
-            <div class="flex border-b border-gray-700 flex-shrink-0">
-              <button v-for="tab in ['Body', 'Headers', 'Params']" :key="tab" class="px-4 py-2 text-sm font-medium transition-none" :class="activeTab === tab.toLowerCase() ? 'border-b-2 border-indigo-500 text-indigo-400' : 'text-gray-400 hover:text-white'" @click="activeTab = tab.toLowerCase()">{{ tab }}</button>
+            <div class="flex border-b border-gray-700 min-h-[41px]">
+              <button
+                v-for="tab in ['Body', 'Headers', 'Params']"
+                :key="tab"
+                class="px-4 pt-2 text-sm font-medium transition-none border-b-2"
+                :class="activeTab === tab.toLowerCase()
+                  ? 'pb-[5px] border-indigo-500 text-indigo-400'
+                  : 'pb-[5px] border-transparent text-gray-400 hover:text-white'"
+                @click="activeTab = tab.toLowerCase()"
+              >
+                {{ tab }}
+              </button>
             </div>
             <div class="h-full overflow-y-auto">
               <div v-if="activeTab === 'headers'" class="p-4">
@@ -81,15 +91,26 @@
           :class="{ 'response-glow': isResponseGlowing }"
         >
           <div class="h-[calc(100%-40px)]">
-            <div class="flex justify-between items-center border-b border-gray-700 px-4 min-h-[41px]" :class="{'border-b border-gray-700': response}">
+            <div :class="['flex justify-between border-b border-gray-700 px-4 min-h-[41px]', !response ? 'items-center' : '']">
               <div class="text-gray-500" v-if="!response">Response</div>
               <div class="flex" v-if="response">
-                <button v-for="tab in ['Body', 'Headers']" :key="tab" class="px-4 py-2 text-sm font-medium transition-none" :class="activeResponseTab === tab.toLowerCase() ? 'border-b-2 border-indigo-500 text-indigo-400' : 'text-gray-400 hover:text-white'" @click="activeResponseTab = tab.toLowerCase()">{{ tab }}</button>
+                <button
+                  v-for="tab in ['Body', 'Headers']"
+                  :key="tab"
+                  class="px-4 pt-2 text-sm font-medium transition-none border-b-2"
+                  :class="activeResponseTab === tab.toLowerCase()
+                    ? 'pb-[5px] border-indigo-500 text-indigo-400'
+                    : 'pb-[5px] border-transparent text-gray-400 hover:text-white'"
+                  @click="activeResponseTab = tab.toLowerCase()"
+                >
+                  {{ tab }}
+                </button>
+
               </div>
               <div v-else class="flex-1"></div>
               <div v-if="response" class="flex items-center gap-4">
-                <div class="text-gray-400 text-xs">{{ response.timeMs }}ms</div>
-                <div class="px-2 py-1 rounded-md" :class="statusColorClass">{{ response.statusCode }}</div>
+                <div class="text-gray-400 pt-[2px] text-xs">{{ response.timeMs }}ms</div>
+                <div class="px-2 py-1 mt-[2px] rounded-md" :class="statusColorClass">{{ response.statusCode }}</div>
               </div>
               <div v-else class="h-[32px]"></div>
             </div>
