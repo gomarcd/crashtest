@@ -158,115 +158,6 @@ jobs:
           path: build/bin/
           if-no-files-found: error
 
-  build-snap:
-      name: Build Snap Package
-      needs: build
-      runs-on: ubuntu-latest
-      permissions:
-        contents: read
-      env:
-        RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
-        APP_NAME: ${{ secrets.APP_NAME }}
-
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-
-        - name: Download Linux build artifact
-          uses: actions/download-artifact@v4
-          with:
-            name: dist-linux
-            path: dist/linux-build
-
-        - name: Generate snapcraft.yaml
-          run: |
-            SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
-            if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
-            echo "Using Snap Name: $SNAP_NAME_LOWER"
-
-            cat > snapcraft.yaml <<EOF
-            name: ${SNAP_NAME_LOWER}
-            version: '${RELEASE_VERSION}'
-            summary: ${APP_NAME} - The minimal API client.
-            description: |
-              ${APP_NAME} is a fast, minimal API client tool designed with privacy
-              and security in mind. Features include: Modern, open source, minimal UI.
-              No paywall, no registration. Set request parameters and see response headers.
-              Cross-platform support.
-            grade: stable
-            confinement: strict
-            base: core22
-
-            apps:
-              ${SNAP_NAME_LOWER}:
-                command: bin/${APP_NAME}
-                extensions: [gnome]
-                desktop: meta/gui/${SNAP_NAME_LOWER}.desktop
-                plugs:
-                  - network
-                  - home
-
-            parts:
-              app-files:
-                plugin: dump
-                source: build-snap-stage
-                stage-packages:
-                  - libwebkit2gtk-4.1-0
-                  - libgtk-3-0
-            EOF
-            echo "Generated snapcraft.yaml:"
-            cat snapcraft.yaml
-
-        - name: Install imagemagick for Snap icon resizing
-          run: sudo apt-get update && sudo apt-get install -y imagemagick
-
-        - name: Create .desktop file and stage files for Snapcraft
-          id: prep_snap
-          run: |
-            SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
-            if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
-            STAGE_DIR="build-snap-stage"
-            mkdir -p ${STAGE_DIR}/bin ${STAGE_DIR}/meta/gui
-            cat > ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop <<EOF
-            [Desktop Entry]
-            Version=1.0
-            Name=${APP_NAME}
-            Comment=${APP_NAME} - The minimal API client.
-            Exec=${SNAP_NAME_LOWER}
-            Icon=\${SNAP}/meta/gui/${SNAP_NAME_LOWER}.png
-            Terminal=false
-            Type=Application
-            Categories=Utility;Network;Development;
-            EOF
-            echo "Generated desktop file:"
-            cat ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.desktop
-            echo "Copying binary: dist/linux-build/${APP_NAME} to ${STAGE_DIR}/bin/${APP_NAME}"
-            cp dist/linux-build/${APP_NAME} ${STAGE_DIR}/bin/${APP_NAME}
-            chmod +x ${STAGE_DIR}/bin/${APP_NAME}
-            echo "Resizing icon ./appicon.png to 512x512 for Snap..."
-            convert ./appicon.png -resize 512x512 ${STAGE_DIR}/meta/gui/${SNAP_NAME_LOWER}.png
-            echo "Contents of ${STAGE_DIR}:"
-            ls -lR ${STAGE_DIR}/
-
-        - name: Build Snap using Docker
-          run: |
-            SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
-            if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
-            cp snapcraft.yaml build-snap-stage/
-            docker run --rm \
-              -v "$PWD:/build" \
-              -w /build/build-snap-stage \
-              ghcr.io/canonical/snapcraft:8_core24 \
-              snapcraft --destructive-mode --output ../snap-build-output/${SNAP_NAME_LOWER}_${RELEASE_VERSION}_amd64.snap
-
-
-        - name: Upload Snap artifact
-          uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-          with:
-            name: snap-package
-            path: snap-build-output/*.snap
-            if-no-files-found: error
-
   build-flatpak:
       name: Build Flatpak Package
       needs: build
@@ -388,7 +279,7 @@ jobs:
             if-no-files-found: error
 
   publish:
-    needs: [build, build-flatpak, build-snap]
+    needs: [build, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -403,12 +294,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
-
-      - name: Download Snap artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: snap-package
-          path: dist/snap-build
 
       - name: Download Flatpak artifact
         uses: actions/download-artifact@v4
@@ -439,15 +324,6 @@ jobs:
             MAC_SRC_PATH="dist/dist-mac/${APP_NAME}.dmg"
             if [ -f "${MAC_SRC_PATH}" ]; then mv "${MAC_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"; else echo "Warning: Mac DMG not found"; fi
           else echo "Warning: dist/dist-mac directory not found"; fi
-          if [ -d dist/snap-build ]; then
-            SNAP_FILE=$(find dist/snap-build -maxdepth 1 -name '*.snap' -print -quit)
-            if [ -n "$SNAP_FILE" ] && [ -f "$SNAP_FILE" ]; then
-              SNAP_NAME_LOWER=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
-              if [ -z "$SNAP_NAME_LOWER" ]; then SNAP_NAME_LOWER="myapp"; fi
-              mv "$SNAP_FILE" "release/${SNAP_NAME_LOWER}_${RELEASE_VERSION}_amd64.snap"
-              echo "Found and moved Snap package: $SNAP_FILE"
-            else echo "Warning: Snap package not found in dist/snap-build"; ls -la dist/snap-build/; fi
-          else echo "Warning: dist/snap-build directory not found"; fi
           if [ -d dist/flatpak-build ]; then
             FLATPAK_FILE=$(find dist/flatpak-build -maxdepth 1 -name '*.flatpak' -print -quit)
             if [ -n "$FLATPAK_FILE" ] && [ -f "$FLATPAK_FILE" ]; then
