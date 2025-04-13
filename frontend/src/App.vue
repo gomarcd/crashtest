@@ -133,7 +133,9 @@ declare global {
         };
       };
     };
-    runtime?: { Environment(): Promise<any>; }
+    runtime?: { 
+      Environment(): Promise<{ platform: string; [key: string]: unknown }>;
+    }
   }
 }
 
@@ -262,14 +264,20 @@ async function sendRequest() {
       }
       previousUrl.value = finalUrlDisplayed;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending request:', error);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+        ? error 
+        : 'Unknown error';
+        
     response.value = {
       statusCode: 0,
       headers: {},
-      body: `Error: ${error.message || String(error)}`,
+      body: `Error: ${errorMessage}`,
       timeMs: 0,
-      error: error.message || String(error),
+      error: errorMessage,
     };
     activeResponseTab.value = 'body';
     url.value = currentUrlInBar;
@@ -295,10 +303,22 @@ function handleUrlBarShortcut(e: KeyboardEvent) {
   }
 }
 
+interface EnvironmentInfo {
+  platform: string;
+  [key: string]: unknown;
+}
+
 onMounted(async () => {
   try {
-    const env = window.runtime ? await window.runtime.Environment() : await Environment();
-    isNonMac.value = env.platform.toLowerCase() !== 'darwin';
+    let envInfo: EnvironmentInfo;
+    if (window.runtime) {
+      const env = await window.runtime.Environment();
+      envInfo = env as EnvironmentInfo;
+    } else {
+      const env = await Environment();
+      envInfo = env as EnvironmentInfo;
+    }
+    isNonMac.value = envInfo.platform.toLowerCase() !== 'darwin';
   } catch (e) {
     console.warn("Could not determine platform:", e);
   }
