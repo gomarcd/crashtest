@@ -53,11 +53,7 @@
       </div>
       
       <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
-        <!-- Request Panel -->
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800">
-          <div class="px-4 py-2 font-medium border-b border-gray-700">
-            Request
-          </div>
           <div class="h-[calc(100%-40px)]">
             <div class="flex border-b border-gray-700">
               <button 
@@ -159,46 +155,44 @@
             >
               <textarea 
                 v-model="requestBody" 
-                placeholder="Request body (JSON, XML, etc.)" 
+                placeholder="Request body (GraphQL, JSON, etc)" 
                 class="w-full h-full p-4 border-none bg-gray-800 text-gray-200 focus:ring-0 font-mono text-sm"
               />
             </div>
           </div>
         </div>
         
-        <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800">
-          <div class="flex items-center px-4 py-2 font-medium border-b border-gray-700">
-            <span>Response</span>
-            <div
-              v-if="response"
-              class="ml-4 flex items-center gap-2"
-            >
-              <div 
-                class="px-2 py-1 rounded-md text-white font-medium text-xs"
-                :class="statusColorClass"
-              >
-                {{ response.statusCode }}
-              </div>
-              <div class="text-gray-400 text-xs">
-                {{ response.timeMs }}ms
-              </div>
-            </div>
-          </div>
-          
+        <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800">          
           <div class="h-[calc(100%-40px)]">
             <div
               v-if="response"
-              class="flex border-b border-gray-700"
+              class="flex justify-between items-center border-b border-gray-700 px-4"
             >
-              <button 
-                v-for="tab in ['Body', 'Headers']" 
-                :key="tab"
-                class="px-4 py-2 text-sm font-medium transition-colors"
-                :class="activeResponseTab === tab.toLowerCase() ? 'border-b-2 border-indigo-500 text-indigo-400' : 'text-gray-400 hover:text-white'"
-                @click="activeResponseTab = tab.toLowerCase()"
+              <div class="flex">
+                <button 
+                  v-for="tab in ['Body', 'Headers']" 
+                  :key="tab"
+                  class="px-4 py-2 text-sm font-medium transition-colors"
+                  :class="activeResponseTab === tab.toLowerCase() ? 'border-b-2 border-indigo-500 text-indigo-400' : 'text-gray-400 hover:text-white'"
+                  @click="activeResponseTab = tab.toLowerCase()"
+                >
+                  {{ tab }}
+                </button>
+              </div>
+              <div
+                v-if="response"
+                class="flex items-center gap-4"
               >
-                {{ tab }}
-              </button>
+                <div class="text-gray-400 text-xs">
+                  {{ response.timeMs }}ms
+                </div>              
+                <div 
+                  class="px-2 py-1 rounded-md text-xs"
+                  :class="statusColorClass"
+                >
+                  {{ response.statusCode }}
+                </div>
+              </div>
             </div>
             
             <div
@@ -212,23 +206,14 @@
                   @click="copyToClipboard"
                   title="Copy to Clipboard"
                 >
-                  <svg
-                    v-if="!copied"
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    width="24"
-                    fill="currentColor"
-                  >
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                  <svg v-if="!copied" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4 size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
                   </svg>
                   <svg
                     v-if="copied"
+                    class="h-4 w-4 size-6"
                     xmlns="http://www.w3.org/2000/svg"
-                    height="24"
                     viewBox="0 0 24 24"
-                    width="24"
                     fill="#34c759"
                   >
                     <path d="M0 0h24v24H0z" fill="none"/>
@@ -350,7 +335,7 @@ const statusColorClass = computed(() => {
   if (!response.value) return '';
   
   const status = response.value.statusCode;
-  if (status >= 200 && status < 300) return 'bg-green-600';
+  if (status >= 200 && status < 300) return 'bg-green-500 text-green-100 font-bold';
   if (status >= 300 && status < 400) return 'bg-blue-600';
   if (status >= 400 && status < 500) return 'bg-yellow-600';
   if (status >= 500) return 'bg-red-600';
