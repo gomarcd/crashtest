@@ -34,6 +34,7 @@
           >
           
           <button 
+            style="--wails-draggable:none;"
             class="h-full px-3 text-gray-400 hover:text-indigo-400 transition-colors focus:outline-none" 
             :disabled="!url"
             title="Send Request"
