@@ -6,7 +6,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
+	"net"
 )
 
 type APIResponse struct {
@@ -35,46 +37,84 @@ func (a *APIService) SendRequest(config RequestConfig) (*APIResponse, error) {
 	startTime := time.Now()
 
 	reqURL := config.URL
-	if len(config.QueryParams) > 0 {
-		req, err := http.NewRequest(config.Method, config.URL, nil)
+	hasScheme := strings.HasPrefix(reqURL, "http://") || strings.HasPrefix(reqURL, "https://")
+	if !hasScheme {
+		reqURL = "http://" + reqURL
+	}
+
+	sendRequest := func(url string) (*http.Response, error) {
+		currentURL := url
+		if len(config.QueryParams) > 0 {
+			req, err := http.NewRequest(config.Method, url, nil)
+			if err != nil {
+				return nil, err
+			}
+			q := req.URL.Query()
+			for key, value := range config.QueryParams {
+				q.Add(key, value)
+			}
+			req.URL.RawQuery = q.Encode()
+			currentURL = req.URL.String()
+		}
+
+		var reqBody io.Reader
+		if config.Body != "" {
+			reqBody = bytes.NewBufferString(config.Body)
+		}
+
+		req, err := http.NewRequest(config.Method, currentURL, reqBody)
 		if err != nil {
+			return nil, err
+		}
+
+		for key, value := range config.Headers {
+			req.Header.Add(key, value)
+		}
+
+		if config.Method != "GET" && config.Method != "HEAD" && req.Header.Get("Content-Type") == "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		client := &http.Client{
+			Timeout: 10 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return nil
+			},
+		}
+		return client.Do(req)
+	}
+
+	resp, err := sendRequest(reqURL)
+	if err != nil {
+		var shouldRetryWithHTTPS bool
+		if hasScheme {
+			shouldRetryWithHTTPS = false
+		} else {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				shouldRetryWithHTTPS = true
+			} else if _, ok := err.(*net.OpError); ok {
+				shouldRetryWithHTTPS = true
+			} else if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "dial tcp") {
+				shouldRetryWithHTTPS = true
+			}
+		}
+
+		if shouldRetryWithHTTPS && strings.HasPrefix(reqURL, "http://") && !strings.HasPrefix(reqURL, "https://") {
+			log.Printf("HTTP request failed for %s: %v. Retrying with HTTPS...", reqURL, err)
+			httpsURL := "https://" + strings.TrimPrefix(reqURL, "http://")
+			resp, err = sendRequest(httpsURL)
+			if err != nil {
+				return &APIResponse{Error: err.Error()}, nil
+			}
+		} else {
 			return &APIResponse{Error: err.Error()}, nil
 		}
-		q := req.URL.Query()
-		for key, value := range config.QueryParams {
-			q.Add(key, value)
-		}
-		req.URL.RawQuery = q.Encode()
-		reqURL = req.URL.String()
 	}
 
-	var reqBody io.Reader
-	if config.Body != "" {
-		reqBody = bytes.NewBufferString(config.Body)
-	}
-
-	req, err := http.NewRequest(config.Method, reqURL, reqBody)
-	if err != nil {
-		return &APIResponse{Error: err.Error()}, nil
-	}
-
-	for key, value := range config.Headers {
-		req.Header.Add(key, value)
-	}
-
-	if config.Method != "GET" && config.Method != "HEAD" && req.Header.Get("Content-Type") == "" {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return &APIResponse{Error: err.Error()}, nil
-	}
 	defer func() {
-	    if closeErr := resp.Body.Close(); closeErr != nil {
-	        log.Printf("Error closing response body: %v", closeErr)
-	    }
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("Error closing response body: %v", closeErr)
+		}
 	}()
 
 	headers := make(map[string]string)
