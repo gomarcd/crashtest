@@ -248,15 +248,13 @@ jobs:
             echo "Contents of ${STAGE_DIR}:"
             ls -lR ${STAGE_DIR}/
 
-        # This is causing too many issues in the build pipeline
-        # - name: Build Snap using snapcraft action
-        #   uses: snapcore/action-build@v1
-        #   id: snapcraft
-        #   with:
-        #     snapcraft-channel: latest/stable
-        - name: Install Snapcraft CLI
+        - name: Build Snap using Docker
           run: |
-            sudo snap install snapcraft --classic
+            docker run --rm -v "$PWD:/build" -w /build \
+              ghcr.io/canonical/snapcraft:8_core24 \
+              snapcraft pack build-snap-stage \
+                --snapcraft-yaml=snapcraft.yaml \
+                --output snap-build-output/${APP_NAME}_${RELEASE_VERSION}_amd64.snap
 
         - name: Pack Snap manually
           run: |
@@ -394,7 +392,7 @@ jobs:
             if-no-files-found: error
 
   publish:
-    needs: [build, build-flatpak]
+    needs: [build, build-flatpak, build-snap]
     runs-on: ubuntu-latest
     permissions:
       contents: write
