@@ -254,10 +254,17 @@ jobs:
         #   id: snapcraft
         #   with:
         #     snapcraft-channel: latest/stable
-        - name: Build Snap package
+        - name: Install Snapcraft CLI
           run: |
             sudo snap install snapcraft --classic
-            snapcraft --destructive-mode --output snap-build-output/${APP_NAME}_${RELEASE_VERSION}_amd64.snap
+
+        - name: Pack Snap manually
+          run: |
+            mkdir -p snap-build-output
+            snapcraft pack build-snap-stage \
+              --snapcraft-yaml=snapcraft.yaml \
+              --output snap-build-output/${APP_NAME}_${RELEASE_VERSION}_amd64.snap
+
 
         - name: Upload Snap artifact
           uses: actions/upload-artifact@v4
