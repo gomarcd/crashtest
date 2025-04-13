@@ -205,10 +205,39 @@
               class="h-[calc(100%-35px)] overflow-auto"
               style="--wails-draggable:none;"
             >
-              <pre
-                v-if="formattedResponse"
-                class="p-4 whitespace-pre-wrap text-gray-200 font-mono text-sm"
-              >{{ formattedResponse }}</pre>
+              <div v-if="formattedResponse" class="relative">
+                <button
+                  class="absolute top-2 right-2 text-gray-400 hover:text-indigo-400 transition-colors"
+                  @click="copyToClipboard"
+                  title="Copy to Clipboard"
+                >
+                  <svg
+                    v-if="!copied"
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    fill="currentColor"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                  </svg>
+                  <svg
+                    v-if="copied"
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    fill="#34c759"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                </button>
+                <pre
+                  class="p-4 whitespace-pre-wrap text-gray-200 font-mono text-sm"
+                >{{ formattedResponse }}</pre>
+              </div>
               <div
                 v-else
                 class="p-4 text-gray-500"
@@ -296,6 +325,7 @@ const headersList = ref<Header[]>([{ key: '', value: '', enabled: true }]);
 const params = ref<QueryParam[]>([{ key: '', value: '', enabled: true }]);
 const requestBody = ref('');
 const response = ref<APIResponse | null>(null);
+const copied = ref(false);
 
 const headers = computed<Record<string, string>>(() => {
   return headersList.value
@@ -356,6 +386,16 @@ function removeParam(index: number) {
   params.value.splice(index, 1);
   if (params.value.length === 0) {
     addParam();
+  }
+}
+
+async function copyToClipboard() {
+  if (formattedResponse.value) {
+    await navigator.clipboard.writeText(formattedResponse.value);
+    copied.value = true;
+    setTimeout(() => {
+      copied.value = false;
+    }, 2000);
   }
 }
 
