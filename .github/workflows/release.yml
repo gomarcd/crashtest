@@ -81,6 +81,7 @@ jobs:
           build-name: ${{ secrets.APP_NAME }}
           build-platform: ${{ matrix.platform }}
           package: false
+          app-version: ${{ env.RELEASE_VERSION }}
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
           sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
