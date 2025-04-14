@@ -12,26 +12,39 @@
           <div class="border-r border-gray-700">
             <select
               v-model="selectedMethod"
-              class="bg-gray-800 text-white border-0 rounded-none h-full px-2 py-1 text-sm focus:ring-0 appearance-none"
+              class="bg-gray-800 text-gray-400 border-0 rounded-none h-full px-2 py-1 text-sm focus:ring-0 appearance-none"
               style="min-width: 80px; --wails-draggable: none;"
               title="Select HTTP Method"
             >
               <option v-for="method in REQUEST_METHODS" :key="method.name" :value="method.name">{{ method.name }}</option>
             </select>
           </div>
-          <input
-            ref="urlInputRef"
-            v-model="url"
-            placeholder="Enter request URL"
-            :class="[
-              'flex-grow bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0',
-              { 'pr-10': url }
-            ]"
-            style="--wails-draggable:none;"
-            @focus="storePreviousUrl"
-            @keyup.enter="sendRequest"
-            @keydown.escape.prevent="restorePreviousUrl"
-          >
+          
+          <div class="relative flex-grow">
+            <input
+              ref="urlInputRef"
+              v-model="url"
+              placeholder="Enter request URL"
+              class="w-full bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0"
+              :style="{
+                '--wails-draggable': 'none',
+                'color': 'transparent', 
+                'caretColor': 'white'
+              }"
+              @focus="storePreviousUrl"
+              @keyup.enter="sendRequest"
+              @keydown.escape.prevent="restorePreviousUrl"
+            >
+            
+            <div class="absolute inset-0 pointer-events-none flex items-center px-3 text-sm">
+              <template v-if="url">
+                <span class="text-gray-500">{{ urlProtocol }}</span>
+                <span class="text-white">{{ urlWithoutProtocol }}</span>
+              </template>
+              <span v-else class="text-gray-500">Enter request URL</span>
+            </div>
+          </div>
+          
           <button
             style="--wails-draggable:none;"
             class="h-full px-3 text-gray-400 hover:text-indigo-400 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -173,6 +186,15 @@ const copied = ref(false);
 const urlInputRef = ref<HTMLInputElement | null>(null);
 const previousUrl = ref('');
 const isResponseGlowing = ref(false);
+
+const urlProtocol = computed(() => {
+  const match = url.value.match(/^(https?:\/\/)/i);
+  return match ? match[1] : '';
+});
+
+const urlWithoutProtocol = computed(() => {
+  return url.value.replace(/^(https?:\/\/)/i, '');
+});
 
 function storePreviousUrl() {
   previousUrl.value = url.value;
