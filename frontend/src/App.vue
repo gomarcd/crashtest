@@ -24,7 +24,6 @@
             <input
               ref="urlInputRef"
               v-model="url"
-              placeholder="Enter request URL"
               class="w-full bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0"
               :style="{
                 '--wails-draggable': 'none',
@@ -36,13 +35,19 @@
               @keydown.escape.prevent="restorePreviousUrl"
             >
             
-            <div class="absolute inset-0 pointer-events-none flex items-center px-3 text-sm">
+            <div
+              class="absolute inset-0 pointer-events-none flex items-center text-sm"
+              :class="url ? 'justify-start px-3' : 'justify-center pr-[32px]'"
+            >
               <template v-if="url">
                 <span class="text-gray-500">{{ urlProtocol }}</span>
                 <span class="text-white">{{ urlWithoutProtocol }}</span>
               </template>
-              <span v-else class="text-gray-500">Enter request URL</span>
+              <template v-else>
+                <span class="text-gray-500 text-lg">Endpoint {{ shortcutText }}</span>
+              </template>
             </div>
+
           </div>
           
           <button
@@ -229,6 +234,10 @@ const statusColorClass = computed(() => {
   if (status >= 400 && status < 500) return 'bg-yellow-600';
   if (status >= 500) return 'bg-red-600';
   return 'bg-gray-600';
+});
+
+const shortcutText = computed(() => {
+  return isNonMac.value ? 'Ctrl+L' : '⌘L';
 });
 
 const formattedResponse = computed(() => {
