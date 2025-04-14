@@ -251,11 +251,16 @@ async function sendRequest() {
   if (!url.value.trim()) return;
 
   const currentUrlInBar = url.value.trim();
+  let processedUrl = currentUrlInBar;
+
+  if (!processedUrl.match(/^https?:\/\//i)) {
+    processedUrl = "http://" + processedUrl;
+  }
 
   try {
     const config: RequestConfig = {
       method: selectedMethod.value,
-      url: url.value,
+      url: processedUrl,
       headers: headers.value,
       queryParams: queryParams.value,
       body: requestBody.value || null,
@@ -264,26 +269,9 @@ async function sendRequest() {
     response.value = await window.go.main.APIService.SendRequest(config);
     activeResponseTab.value = 'body';
 
-    let finalUrlDisplayed = currentUrlInBar;
-    if (response.value) {
-      const finalUrlHeader = response.value.headers['X-Final-Url'] || response.value.headers['x-final-url'];
-      if (finalUrlHeader) {
-        finalUrlDisplayed = finalUrlHeader.replace(/^https?:\/\//i, '');
-      } else if (response.value.statusCode >= 300 && response.value.statusCode < 400) {
-        const locationHeader = response.value.headers['Location'] || response.value.headers['location'];
-        if (locationHeader) {
-          try {
-            const absoluteRedirectUrl = new URL(locationHeader, config.url).toString();
-            finalUrlDisplayed = absoluteRedirectUrl.replace(/^https?:\/\//i, '');
-          } catch (e) {
-            finalUrlDisplayed = locationHeader.replace(/^https?:\/\//i, '');
-          }
-        }
-      }
-      if (finalUrlDisplayed !== currentUrlInBar) {
-        url.value = finalUrlDisplayed;
-      }
-      previousUrl.value = finalUrlDisplayed;
+    if (response.value && response.value.usedURL) {
+      url.value = response.value.usedURL;
+      previousUrl.value = url.value;
     }
   } catch (error: unknown) {
     console.error('Error sending request:', error);
@@ -301,8 +289,6 @@ async function sendRequest() {
       error: errorMessage,
     };
     activeResponseTab.value = 'body';
-    url.value = currentUrlInBar;
-    previousUrl.value = currentUrlInBar;
   } finally {
     isResponseGlowing.value = true;
     setTimeout(() => {

@@ -6,6 +6,7 @@ export namespace main {
 	    body: any;
 	    timeMs: number;
 	    error?: string;
+	    usedURL?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new APIResponse(source);
@@ -18,6 +19,7 @@ export namespace main {
 	        this.body = source["body"];
 	        this.timeMs = source["timeMs"];
 	        this.error = source["error"];
+	        this.usedURL = source["usedURL"];
 	    }
 	}
 	export class RequestConfig {

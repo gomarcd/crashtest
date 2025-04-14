@@ -7,6 +7,7 @@ export interface RequestConfig {
 }
 
 export interface APIResponse {
+  usedURL?: string;
   statusCode: number;
   headers: Record<string, string>;
   body: string | object | null;

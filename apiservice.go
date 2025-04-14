@@ -17,6 +17,7 @@ type APIResponse struct {
 	Body       interface{}       `json:"body"`
 	TimeMs     int64             `json:"timeMs"`
 	Error      string            `json:"error,omitempty"`
+	UsedURL    string            `json:"usedURL,omitempty"`
 }
 
 type RequestConfig struct {
@@ -41,6 +42,8 @@ func (a *APIService) SendRequest(config RequestConfig) (*APIResponse, error) {
 	if !hasScheme {
 		reqURL = "http://" + reqURL
 	}
+
+	finalURL := reqURL
 
 	sendRequest := func(url string) (*http.Response, error) {
 		currentURL := url
@@ -78,25 +81,27 @@ func (a *APIService) SendRequest(config RequestConfig) (*APIResponse, error) {
 		client := &http.Client{
 			Timeout: 10 * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				log.Printf("Redirecting to: %s", req.URL.String())
 				return nil
 			},
 		}
-		return client.Do(req)
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		finalURL = resp.Request.URL.String()
+		return resp, nil
 	}
 
 	resp, err := sendRequest(reqURL)
 	if err != nil {
 		var shouldRetryWithHTTPS bool
-		if hasScheme {
-			shouldRetryWithHTTPS = false
-		} else {
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				shouldRetryWithHTTPS = true
-			} else if _, ok := err.(*net.OpError); ok {
-				shouldRetryWithHTTPS = true
-			} else if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "dial tcp") {
-				shouldRetryWithHTTPS = true
-			}
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			shouldRetryWithHTTPS = true
+		} else if _, ok := err.(*net.OpError); ok {
+			shouldRetryWithHTTPS = true
+		} else if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "dial tcp") {
+			shouldRetryWithHTTPS = true
 		}
 
 		if shouldRetryWithHTTPS && strings.HasPrefix(reqURL, "http://") && !strings.HasPrefix(reqURL, "https://") {
@@ -136,11 +141,14 @@ func (a *APIService) SendRequest(config RequestConfig) (*APIResponse, error) {
 
 	elapsedTime := time.Since(startTime).Milliseconds()
 
+	log.Printf("Sending APIResponse with UsedURL: %s", finalURL)
+
 	return &APIResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Body:       bodyInterface,
 		TimeMs:     elapsedTime,
 		Error:      "",
+		UsedURL:    finalURL,
 	}, nil
 }
