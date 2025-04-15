@@ -78,7 +78,7 @@
                 {{ tab }}
               </button>
             </div>
-            <div class="h-full overflow-y-auto">
+            <div class="overflow-y-auto">
               <div v-if="activeTab === 'headers'" class="p-4">
                 <div v-for="(header, index) in headersList" :key="index" class="flex items-center gap-2 mb-2 w-full">
                   <input v-model="header.enabled" type="checkbox" class="rounded text-indigo-500 bg-gray-700 border-gray-600 focus:ring-indigo-500">
