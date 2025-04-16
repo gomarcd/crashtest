@@ -7,60 +7,11 @@
       class="flex-grow h-full flex flex-col px-2 gap-2"
       :class="isNonMac ? 'pt-3 pb-2' : 'pt-8 pb-2'"
     >
-      <div class="flex items-center h-8">
-        <div class="relative flex-grow bg-gray-800 border border-gray-700 rounded-md h-8 flex items-center overflow-hidden">
-          <div class="border-r border-gray-700">
-            <select
-              v-model="selectedMethod"
-              class="bg-gray-800 text-gray-400 border-0 rounded-none h-full px-2 py-1 text-sm focus:ring-0 appearance-none"
-              style="min-width: 80px; --wails-draggable: none;"
-              title="Select HTTP Method"
-            >
-              <option v-for="method in REQUEST_METHODS" :key="method.name" :value="method.name">{{ method.name }}</option>
-            </select>
-          </div>
-          
-          <div class="relative flex-grow">
-            <input
-              ref="urlInputRef"
-              v-model="url"
-              class="w-full bg-gray-800 text-white border-0 rounded-none h-full px-3 py-1 text-sm focus:ring-0"
-              :style="{
-                '--wails-draggable': 'none',
-                'color': 'transparent', 
-                'caretColor': 'white'
-              }"
-              @focus="storePreviousUrl"
-              @keyup.enter="sendRequest"
-              @keydown.escape.prevent="restorePreviousUrl"
-            >
-            
-            <div
-              class="absolute inset-0 pointer-events-none flex items-center text-sm"
-              :class="url ? 'justify-start px-3' : 'justify-center pr-[32px]'"
-            >
-              <template v-if="url">
-                <span class="text-gray-500">{{ urlProtocol }}</span>
-                <span class="text-white">{{ urlWithoutProtocol }}</span>
-              </template>
-              <template v-else>
-                <span class="text-gray-500 text-lg">Endpoint {{ shortcutText }}</span>
-              </template>
-            </div>
-
-          </div>
-          
-          <button
-            style="--wails-draggable:none;"
-            class="h-full px-3 text-gray-400 hover:text-indigo-400 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!url"
-            title="Send Request"
-            @click="sendRequest"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11h2v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
-          </button>
-        </div>
-      </div>
+      <RequestBar 
+        ref="requestBarRef"
+        :is-non-mac="isNonMac"
+        @send-request="handleSendRequest"
+      />
 
       <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col">
@@ -159,10 +110,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import type { Header, QueryParam, RequestConfig, APIResponse, RequestMethod } from './types';
+import { ref, computed, onMounted } from 'vue';
 import { REQUEST_METHODS } from './types';
+import type { Header, QueryParam, RequestConfig, APIResponse, RequestMethod } from './types';
 import { Environment } from '../wailsjs/runtime/runtime';
+import RequestBar from './components/RequestBar.vue';
+const _components = { RequestBar };
 
 declare global {
   interface Window {
@@ -180,8 +133,6 @@ declare global {
 }
 
 const isNonMac = ref(false);
-const selectedMethod = ref<RequestMethod>('GET');
-const url = ref('https://jsonplaceholder.typicode.com/users');
 const activeTab = ref('body');
 const activeResponseTab = ref('body');
 const headersList = ref<Header[]>([{ key: '', value: '', enabled: true }]);
@@ -189,31 +140,8 @@ const params = ref<QueryParam[]>([{ key: '', value: '', enabled: true }]);
 const requestBody = ref('');
 const response = ref<APIResponse | null>(null);
 const copied = ref(false);
-const urlInputRef = ref<HTMLInputElement | null>(null);
-const previousUrl = ref('');
+const requestBarRef = ref<InstanceType<typeof RequestBar> | null>(null);
 const isResponseGlowing = ref(false);
-
-const urlProtocol = computed(() => {
-  const match = url.value.match(/^(https?:\/\/)/i);
-  return match ? match[1] : '';
-});
-
-const urlWithoutProtocol = computed(() => {
-  return url.value.replace(/^(https?:\/\/)/i, '');
-});
-
-function storePreviousUrl() {
-  previousUrl.value = url.value;
-}
-
-async function restorePreviousUrl() {
-  url.value = previousUrl.value;
-  await nextTick();
-  if (urlInputRef.value) {
-    urlInputRef.value.focus();
-    urlInputRef.value.select();
-  }
-}
 
 const headers = computed<Record<string, string>>(() => {
   return headersList.value
@@ -237,16 +165,13 @@ const statusColorClass = computed(() => {
   return 'bg-gray-600';
 });
 
-const shortcutText = computed(() => {
-  return isNonMac.value ? 'Ctrl+L' : '⌘L';
-});
-
 const formattedResponse = computed(() => {
   if (!response.value || response.value.body === null) return '';
   const body = response.value.body;
   if (typeof body === 'string') {
     return body;
-  }if (typeof body === 'object') {
+  }
+  if (typeof body === 'object') {
     return JSON.stringify(body, null, 2);
   }
   return '';
@@ -278,32 +203,28 @@ async function copyToClipboard() {
   }
 }
 
-async function sendRequest() {
+interface RequestBarEvent {
+  method: RequestMethod;
+  url: string;
+}
+
+async function handleSendRequest(requestInfo: RequestBarEvent) {
   isResponseGlowing.value = false;
-  if (!url.value.trim()) return;
-
-  const currentUrlInBar = url.value.trim();
-  let processedUrl = currentUrlInBar;
-
-  if (!processedUrl.match(/^https?:\/\//i)) {
-    processedUrl = `http://${processedUrl}`;
-  }
-
+  
   try {
     const config: RequestConfig = {
-      method: selectedMethod.value,
-      url: processedUrl,
+      method: requestInfo.method,
+      url: requestInfo.url,
       headers: headers.value,
       queryParams: queryParams.value,
-      body: requestBody.value || null,
+      body: requestBody.value,
     };
 
     response.value = await window.go.main.APIService.SendRequest(config);
     activeResponseTab.value = 'body';
 
-    if (response.value?.usedURL) {
-      url.value = response.value.usedURL;
-      previousUrl.value = url.value;
+    if (response.value?.usedURL && requestBarRef.value) {
+      requestBarRef.value.updateUrl(response.value.usedURL);
     }
   } catch (error: unknown) {
     console.error('Error sending request:', error);
@@ -329,19 +250,6 @@ async function sendRequest() {
   }
 }
 
-function handleUrlBarShortcut(e: KeyboardEvent) {
-  const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-  const metaOrCtrl = isMac ? e.metaKey : e.ctrlKey;
-
-  if (metaOrCtrl && e.key.toLowerCase() === 'l') {
-    e.preventDefault();
-    if (urlInputRef.value) {
-      urlInputRef.value.focus();
-      urlInputRef.value.select();
-    }
-  }
-}
-
 interface EnvironmentInfo {
   platform: string;
   [key: string]: unknown;
@@ -361,17 +269,14 @@ onMounted(async () => {
   } catch (e) {
     console.warn("Could not determine platform:", e);
   }
-
-  window.addEventListener('keydown', handleUrlBarShortcut);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleUrlBarShortcut);
 });
 </script>
 
 
 <style>
+.transition-shadow {
+  transition: box-shadow 0.3s ease-in-out;
+}
 .response-glow {
   box-shadow: 0 0 15px 5px rgba(99, 102, 241, 0.55);
 }
