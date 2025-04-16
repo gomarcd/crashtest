@@ -34,7 +34,8 @@
 
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue';
-import { REQUEST_METHODS, RequestConfig } from '../types';
+import { REQUEST_METHODS } from '../types';
+import type { RequestConfig } from '../types';
 
 const emit = defineEmits(['send-request']);
 
