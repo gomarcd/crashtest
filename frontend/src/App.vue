@@ -160,7 +160,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Header, QueryParam, RequestConfig, APIResponse, REQUEST_METHODS, RequestMethod } from './types';
+import type { Header, QueryParam, RequestConfig, APIResponse, RequestMethod } from './types';
+import { REQUEST_METHODS } from './types';
 import { Environment } from '../wailsjs/runtime/runtime';
 
 declare global {
@@ -245,7 +246,7 @@ const formattedResponse = computed(() => {
   const body = response.value.body;
   if (typeof body === 'string') {
     return body;
-  } else if (typeof body === 'object') {
+  }if (typeof body === 'object') {
     return JSON.stringify(body, null, 2);
   }
   return '';
@@ -285,7 +286,7 @@ async function sendRequest() {
   let processedUrl = currentUrlInBar;
 
   if (!processedUrl.match(/^https?:\/\//i)) {
-    processedUrl = "http://" + processedUrl;
+    processedUrl = `http://${processedUrl}`;
   }
 
   try {
@@ -300,7 +301,7 @@ async function sendRequest() {
     response.value = await window.go.main.APIService.SendRequest(config);
     activeResponseTab.value = 'body';
 
-    if (response.value && response.value.usedURL) {
+    if (response.value?.usedURL) {
       url.value = response.value.usedURL;
       previousUrl.value = url.value;
     }
