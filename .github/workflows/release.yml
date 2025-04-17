@@ -105,6 +105,7 @@ jobs:
           environment_name: PROD
 
       - name: Rename Signed File
+        if: matrix.platform == 'windows/amd64'
         run: mv build/bin/***-amd64-installer-signed.exe build/bin/***-amd64-installer.exe
 
       - name: Install dependencies for packaging (Linux only)
