@@ -236,7 +236,7 @@ async function handleSendRequest(requestInfo: RequestBarEvent) {
       headers: {},
       body: `Error: ${errorMessage}`,
       timeMs: 0,
-      error: errorMessage,
+      error: String(errorMessage),
     };
     activeResponseTab.value = 'body';
   } finally {
