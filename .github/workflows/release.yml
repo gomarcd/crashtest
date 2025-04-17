@@ -109,7 +109,7 @@ jobs:
           clean_logs: false
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
-  
+
       - name: Install dependencies for packaging (Linux only)
         if: matrix.platform == 'linux/amd64'
         run: |
@@ -323,7 +323,7 @@ jobs:
         id: prep_files
         shell: bash
         run: |
-          if [ -z "$APP_NAME" ]; then echo "Error: APP_NAME not set."; exit 1; fi
+          if [ -z "${APP_NAME}" ]; then echo "Error: APP_NAME not set."; exit 1; fi
           mkdir release
           CHECKSUM_BODY_DATA="### Checksums\n\n| File | SHA256 |\n|---|---|\n"
           DEB_PKG_NAME=$(echo "${APP_NAME}" | tr '[:upper:]' '[:lower:]')
