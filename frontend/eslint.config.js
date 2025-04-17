@@ -25,7 +25,6 @@ export default [
     {
         files: ['src/**/*.vue'],
         plugins: {
-            vue: pluginVue,
             '@typescript-eslint': tseslint.plugin,
         },
         languageOptions: {
