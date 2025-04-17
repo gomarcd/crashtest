@@ -335,33 +335,21 @@ jobs:
             if [ -f "${DEB_SRC_PATH}" ]; then mv "${DEB_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"; else echo "Warning: Debian package not found"; fi
           else echo "Warning: dist/dist-linux directory not found"; fi
           if [ -d dist/dist-windows ]; then
-              SIGNED_DIR="dist/dist-windows/${APP_NAME}-amd64-installer-signed.exe"
-              if [ -d "${SIGNED_DIR}" ]; then
-                WIN_SRC_PATH="${SIGNED_DIR}/${APP_NAME}-amd64-installer.exe"
-                if [ -f "${WIN_SRC_PATH}" ]; then 
-                  mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
-                else
-                  echo "ERROR: Signed Windows installer not found inside ${SIGNED_DIR}"
-                  ls -la "${SIGNED_DIR}"
-                  exit 1
-                fi
+            SIGNED_DIR="dist/dist-windows/${APP_NAME}-amd64-installer-signed.exe"
+            if [ -d "${SIGNED_DIR}" ]; then
+              WIN_SRC_PATH="${SIGNED_DIR}/${APP_NAME}-amd64-installer.exe"
+              if [ -f "${WIN_SRC_PATH}" ]; then 
+                mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
               else
-                echo "ERROR: Signed Windows installer directory not found at ${SIGNED_DIR}"
-                ls -la dist/dist-windows/
+                echo "ERROR: Signed Windows installer not found inside ${SIGNED_DIR}"
+                ls -la "${SIGNED_DIR}"
                 exit 1
               fi
-            else 
-              echo "ERROR: dist/dist-windows directory not found"
-              exit 1
-            fi
             else
-              echo "ERROR: dist/dist-windows directory not found"
+              echo "ERROR: Signed Windows installer directory not found at ${SIGNED_DIR}"
+              ls -la dist/dist-windows/
               exit 1
             fi
-          else 
-            echo "ERROR: dist/dist-windows directory not found"
-            exit 1
-          fi
           else 
             echo "ERROR: dist/dist-windows directory not found"
             exit 1
