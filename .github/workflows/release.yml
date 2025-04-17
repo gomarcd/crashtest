@@ -6,7 +6,7 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  APP_NAME: ${{ env.APP_NAME }}
+  APP_NAME: ${{ secrets.APP_NAME }}
 
 jobs:
   build:
