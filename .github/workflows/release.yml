@@ -6,7 +6,6 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  APP_NAME: ${{ secrets.APP_NAME }}
 
 jobs:
   build:
@@ -64,7 +63,7 @@ jobs:
           APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
           APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
-          APP_NAME: ${{ env.APP_NAME }}
+          APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
@@ -79,9 +78,10 @@ jobs:
         with:
           go-version: "1.23"
           wails-version: "v2.9.0"
-          build-name: ${{ env.APP_NAME }}
+          build-name: ${{ secrets.APP_NAME }}
           build-platform: ${{ matrix.platform }}
           package: false
+          app-version: ${{ env.RELEASE_VERSION }}
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
           sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
@@ -90,6 +90,8 @@ jobs:
           sign-macos-installer-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-installer-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
+          sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
+          sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
       - name: Sign Windows Executable with SSL.com ESigner
         if: matrix.platform == 'windows/amd64'
@@ -118,7 +120,7 @@ jobs:
       - name: Package Linux AppImage and .deb (Linux only)
         if: matrix.platform == 'linux/amd64'
         env:
-          APP_NAME: ${{ env.APP_NAME }}
+          APP_NAME: ${{ secrets.APP_NAME }}
         run: |
           mkdir -p AppDir/usr/bin \
                    AppDir/usr/share/icons/hicolor/256x256/apps
@@ -180,6 +182,7 @@ jobs:
         contents: read
       env:
         RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+        APP_NAME: ${{ secrets.APP_NAME }}
         FLATPAK_APP_ID: ${{ secrets.BUNDLE_ID }}
       steps:
         - name: Checkout code
@@ -195,13 +198,13 @@ jobs:
           run: |
             cat > "${FLATPAK_APP_ID}.desktop" <<EOF
             [Desktop Entry]
-            Name=${APP_NAME}
-            Exec=${APP_NAME}
+            Name=${{ secrets.APP_NAME }}
+            Exec=${{ secrets.APP_NAME }}
             Type=Application
             Icon=${FLATPAK_APP_ID}
             Terminal=false
             Categories=Development;Network;Utility;
-            Comment=${APP_NAME} - The minimal API client
+            Comment=${{ secrets.APP_NAME }} - The minimal API client
             EOF
             cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
             <?xml version="1.0" encoding="UTF-8"?>
@@ -299,6 +302,7 @@ jobs:
 
     env:
       RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
+      APP_NAME: ${{ secrets.APP_NAME }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -329,17 +333,8 @@ jobs:
             if [ -f "${DEB_SRC_PATH}" ]; then mv "${DEB_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"; else echo "Warning: Debian package not found"; fi
           else echo "Warning: dist/dist-linux directory not found"; fi
           if [ -d dist/dist-windows ]; then
-            WIN_SRC_PATH=$(find dist/dist-windows -type f -name "${APP_NAME}-amd64-installer-signed.exe" -print -quit)
-            if [[ -n "$WIN_SRC_PATH" && -f "$WIN_SRC_PATH" ]]; then
-              echo "Found signed Windows installer: ${WIN_SRC_PATH}"
-              mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
-            else
-              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-              echo "Error: Could not find the signed Windows installer ('${APP_NAME}-amd64-installer-signed.exe') in dist/dist-windows/"
-              echo "Contents of dist/dist-windows/:"
-              ls -la dist/dist-windows/
-              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            fi
+            WIN_SRC_PATH="dist/dist-windows/${APP_NAME}-amd64-installer.exe"
+            if [ -f "${WIN_SRC_PATH}" ]; then mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"; else echo "Warning: Windows installer not found"; fi
           else echo "Warning: dist/dist-windows directory not found"; fi
           if [ -d dist/dist-mac ]; then
             MAC_SRC_PATH="dist/dist-mac/${APP_NAME}.dmg"
@@ -401,7 +396,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${APP_NAME} Release ${{ env.RELEASE_VERSION }}
+          name: ${{ env.APP_NAME }} Release ${{ env.RELEASE_VERSION }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: release/**
@@ -450,5 +445,5 @@ jobs:
           fi
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          APP_NAME: ${APP_NAME}
+          APP_NAME: ${{ secrets.APP_NAME }}
           GITHUB_REPOSITORY: ${{ github.repository }}
