@@ -335,9 +335,19 @@ jobs:
             if [ -f "${DEB_SRC_PATH}" ]; then mv "${DEB_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"; else echo "Warning: Debian package not found"; fi
           else echo "Warning: dist/dist-linux directory not found"; fi
           if [ -d dist/dist-windows ]; then
-            WIN_SRC_PATH="dist/dist-windows/${APP_NAME}-amd64-installer.exe"
-            if [ -f "${WIN_SRC_PATH}" ]; then mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"; else echo "Warning: Windows installer not found"; fi
-          else echo "Warning: dist/dist-windows directory not found"; fi
+            WIN_SRC_PATH="dist/dist-windows/${APP_NAME}-amd64-installer-signed.exe"
+            if [ -f "${WIN_SRC_PATH}" ]; then 
+              mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
+            else 
+              echo "ERROR: Signed Windows installer not found at ${WIN_SRC_PATH}"
+              echo "Contents of dist/dist-windows/:"
+              ls -la dist/dist-windows/
+              exit 1
+            fi
+          else 
+            echo "ERROR: dist/dist-windows directory not found"
+            exit 1
+          fi
           if [ -d dist/dist-mac ]; then
             MAC_SRC_PATH="dist/dist-mac/${APP_NAME}.dmg"
             if [ -f "${MAC_SRC_PATH}" ]; then mv "${MAC_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_universal.dmg"; else echo "Warning: Mac DMG not found"; fi
