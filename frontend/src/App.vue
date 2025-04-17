@@ -56,8 +56,7 @@
         </div>
 
         <div
-          class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col transition-shadow duration-300 ease-in-out"
-          :class="{ 'response-glow': isResponseGlowing }"
+          class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col"
         >
           <div class="h-[calc(100%-40px)]">
             <div :class="['flex justify-between border-b border-gray-700 px-4 min-h-[41px]', !response ? 'items-center' : '']">
@@ -115,7 +114,6 @@ import { REQUEST_METHODS } from './types';
 import type { Header, QueryParam, RequestConfig, APIResponse, RequestMethod } from './types';
 import { Environment } from '../wailsjs/runtime/runtime';
 import RequestBar from './components/RequestBar.vue';
-const _components = { RequestBar };
 
 declare global {
   interface Window {
@@ -271,16 +269,7 @@ onMounted(async () => {
   }
 });
 </script>
-
-
 <style>
-.transition-shadow {
-  transition: box-shadow 0.3s ease-in-out;
-}
-.response-glow {
-  box-shadow: 0 0 15px 5px rgba(99, 102, 241, 0.55);
-}
-
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
 ::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 4px; border: 2px solid #1f2937; }
@@ -290,8 +279,4 @@ onMounted(async () => {
 textarea { resize: none; }
 *:focus-visible { outline: 2px solid #818cf8; outline-offset: 1px; }
 *:focus:not(:focus-visible) { outline: none; }
-select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;
-}
 </style>
