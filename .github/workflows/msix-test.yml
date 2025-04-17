@@ -1,0 +1,150 @@
+name: Test MSIX Package Creation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '0.0.1'
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Wails app
+        run: wails build
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+
+      - name: Copy app icon
+        shell: bash
+        run: |
+          mkdir -p build
+          cp ./appicon.png build/appicon.png
+
+      - name: Create MSIX Package
+        shell: powershell
+        run: |
+          # Find the SDK path
+          $sdkPath = $null
+          $possibleSdkVersions = @("10.0.22621.0", "10.0.22000.0", "10.0.20348.0", "10.0.19041.0", "10.0.18362.0")
+          
+          foreach ($version in $possibleSdkVersions) {
+            if (Test-Path "C:\Program Files (x86)\Windows Kits\10\bin\$version\x64\MakeAppx.exe") {
+              $sdkPath = "C:\Program Files (x86)\Windows Kits\10\bin\$version\x64"
+              Write-Host "Found Windows SDK tools at: $sdkPath"
+              break
+            }
+          }
+          
+          if (-not $sdkPath) {
+            Write-Error "Could not find Windows SDK tools."
+            exit 1
+          }
+          
+          # Create MSIX manifest directory
+          mkdir -p AppxPackage
+          
+          # Copy built application to package directory
+          Copy-Item -Path "build\bin\${env:APP_NAME}.exe" -Destination "AppxPackage\"
+          
+          # Create manifest file
+          $manifestContent = @"
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <Identity Name="${env:BUNDLE_ID}"
+    Version="${{ github.event.inputs.version }}.0"
+    Publisher="CN=Crashtest" 
+    ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>${env:APP_NAME}</DisplayName>
+    <PublisherDisplayName>Crashtest</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="${env:APP_NAME}.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="${env:APP_NAME}"
+        Description="The minimal API client"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
+"@
+          $manifestContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
+          
+          # Create assets directory and copy icons
+          mkdir -p AppxPackage\Assets
+          
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\StoreLogo.png"
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square150x150Logo.png"
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.png"
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Wide310x150Logo.png"
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\SmallTile.png"
+          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\LargeTile.png"
+          
+          # Create MSIX package
+          & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
+          
+          # Certificate setup for signing
+          $certPath = "$env:TEMP\cert.pfx"
+          [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_DATA) | Set-Content -Path $certPath -Encoding Byte
+          
+          # Sign the MSIX package with your real certificate
+          & "$sdkPath\SignTool.exe" sign /fd SHA256 /a /f $certPath /p $env:CERTIFICATE_PASSWORD "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
+          
+          # Clean up certificate
+          Remove-Item -Path $certPath -Force
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+          WINDOWS_CERTIFICATE_DATA: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      - name: Upload MSIX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-test-package
+          path: ${{ env.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
+          if-no-files-found: error
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
