@@ -329,13 +329,13 @@ jobs:
             if [ -f "${DEB_SRC_PATH}" ]; then mv "${DEB_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64.deb"; else echo "Warning: Debian package not found"; fi
           else echo "Warning: dist/dist-linux directory not found"; fi
           if [ -d dist/dist-windows ]; then
-            WIN_SRC_PATH=$(find dist/dist-windows -maxdepth 1 -name '*-signed.exe' -print -quit)
+            WIN_SRC_PATH=$(find dist/dist-windows -type f -name "${APP_NAME}-amd64-installer-signed.exe" -print -quit)
             if [[ -n "$WIN_SRC_PATH" && -f "$WIN_SRC_PATH" ]]; then
               echo "Found signed Windows installer: ${WIN_SRC_PATH}"
               mv "${WIN_SRC_PATH}" "release/${APP_NAME}_${RELEASE_VERSION}_amd64_installer.exe"
             else
               echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-              echo "Error: Could not find the signed Windows installer ('*-signed.exe') in dist/dist-windows/"
+              echo "Error: Could not find the signed Windows installer ('${APP_NAME}-amd64-installer-signed.exe') in dist/dist-windows/"
               echo "Contents of dist/dist-windows/:"
               ls -la dist/dist-windows/
               echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
