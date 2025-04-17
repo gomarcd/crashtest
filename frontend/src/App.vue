@@ -225,18 +225,19 @@ async function handleSendRequest(requestInfo: RequestBarEvent) {
     }
   } catch (error: unknown) {
     console.error('Error sending request:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : typeof error === 'string' 
-        ? error 
-        : 'Unknown error';
-        
+
+    const errorMessage: string = (() => {
+      if (error instanceof Error) return error.message;
+      if (typeof error === 'string') return error;
+      return 'Unknown error';
+    })();
+
     response.value = {
       statusCode: 0,
       headers: {},
       body: `Error: ${errorMessage}`,
       timeMs: 0,
-      error: String(errorMessage),
+      error: errorMessage,
     };
     activeResponseTab.value = 'body';
   } finally {
