@@ -71,19 +71,19 @@ jobs:
           # Copy built application to package directory
           Copy-Item -Path "build\bin\${env:APP_NAME}.exe" -Destination "AppxPackage\"
           
-          # Create manifest file
-          $manifestContent = @"
+          # Create manifest file - PROPERLY FORMATTED XML
+          $manifestContent = @'
 <?xml version="1.0" encoding="utf-8"?>
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-  <Identity Name="${env:BUNDLE_ID}"
-    Version="${{ github.event.inputs.version }}.0"
+  <Identity Name="BUNDLE_ID_PLACEHOLDER"
+    Version="VERSION_PLACEHOLDER"
     Publisher="CN=Crashtest" 
     ProcessorArchitecture="x64" />
   <Properties>
-    <DisplayName>${env:APP_NAME}</DisplayName>
+    <DisplayName>APP_NAME_PLACEHOLDER</DisplayName>
     <PublisherDisplayName>Crashtest</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -94,9 +94,9 @@ jobs:
     <Resource Language="en-us" />
   </Resources>
   <Applications>
-    <Application Id="App" Executable="${env:APP_NAME}.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="App" Executable="APP_NAME_PLACEHOLDER.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="${env:APP_NAME}"
+        DisplayName="APP_NAME_PLACEHOLDER"
         Description="The minimal API client"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -109,7 +109,14 @@ jobs:
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
 </Package>
-"@
+'@
+          
+          # Replace placeholders with actual values
+          $manifestContent = $manifestContent.Replace("APP_NAME_PLACEHOLDER", $env:APP_NAME)
+          $manifestContent = $manifestContent.Replace("BUNDLE_ID_PLACEHOLDER", $env:BUNDLE_ID)
+          $manifestContent = $manifestContent.Replace("VERSION_PLACEHOLDER", "${{ github.event.inputs.version }}.0")
+          
+          # Write the manifest file
           $manifestContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
           
           # Create assets directory and copy icons
@@ -144,7 +151,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: msix-test-package
-          path: ${{ env.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
+          path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
           if-no-files-found: error
-        env:
-          APP_NAME: ${{ secrets.APP_NAME }}
