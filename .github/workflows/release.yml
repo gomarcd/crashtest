@@ -63,7 +63,7 @@ jobs:
           APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
           APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
-          APP_NAME: ${{ secrets.APP_NAME }}
+          APP_NAME: ${{ env.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
@@ -78,7 +78,7 @@ jobs:
         with:
           go-version: "1.23"
           wails-version: "v2.9.0"
-          build-name: ${{ secrets.APP_NAME }}
+          build-name: ${{ env.APP_NAME }}
           build-platform: ${{ matrix.platform }}
           package: false
           nsis: ${{ matrix.os == 'windows-latest' }}
@@ -99,8 +99,8 @@ jobs:
           password: ${{ secrets.ES_PASSWORD }}
           credential_id: ${{ secrets.CREDENTIAL_ID }}
           totp_secret: ${{ secrets.ES_TOTP_SECRET }}
-          file_path: build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe
-          output_path: build/bin/${{ secrets.APP_NAME }}-amd64-installer-signed.exe
+          file_path: build/bin/${{ env.APP_NAME }}-amd64-installer.exe
+          output_path: build/bin/${{ env.APP_NAME }}-amd64-installer-signed.exe
           malware_block: true
           environment_name: PROD
           clean_logs: false
@@ -117,7 +117,7 @@ jobs:
       - name: Package Linux AppImage and .deb (Linux only)
         if: matrix.platform == 'linux/amd64'
         env:
-          APP_NAME: ${{ secrets.APP_NAME }}
+          APP_NAME: ${{ env.APP_NAME }}
         run: |
           mkdir -p AppDir/usr/bin \
                    AppDir/usr/share/icons/hicolor/256x256/apps
@@ -179,7 +179,7 @@ jobs:
         contents: read
       env:
         RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
-        APP_NAME: ${{ secrets.APP_NAME }}
+        APP_NAME: ${{ env.APP_NAME }}
         FLATPAK_APP_ID: ${{ secrets.BUNDLE_ID }}
       steps:
         - name: Checkout code
@@ -195,13 +195,13 @@ jobs:
           run: |
             cat > "${FLATPAK_APP_ID}.desktop" <<EOF
             [Desktop Entry]
-            Name=${{ secrets.APP_NAME }}
-            Exec=${{ secrets.APP_NAME }}
+            Name=${{ env.APP_NAME }}
+            Exec=${{ env.APP_NAME }}
             Type=Application
             Icon=${FLATPAK_APP_ID}
             Terminal=false
             Categories=Development;Network;Utility;
-            Comment=${{ secrets.APP_NAME }} - The minimal API client
+            Comment=${{ env.APP_NAME }} - The minimal API client
             EOF
             cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
             <?xml version="1.0" encoding="UTF-8"?>
@@ -299,7 +299,7 @@ jobs:
 
     env:
       RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
-      APP_NAME: ${{ secrets.APP_NAME }}
+      APP_NAME: ${{ env.APP_NAME }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -442,5 +442,5 @@ jobs:
           fi
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          APP_NAME: ${{ secrets.APP_NAME }}
+          APP_NAME: ${{ env.APP_NAME }}
           GITHUB_REPOSITORY: ${{ github.repository }}
