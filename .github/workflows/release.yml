@@ -81,7 +81,6 @@ jobs:
           build-name: ${{ secrets.APP_NAME }}
           build-platform: ${{ matrix.platform }}
           package: false
-          app-version: ${{ env.RELEASE_VERSION }}
           nsis: ${{ matrix.os == 'windows-latest' }}
           sign: ${{ (matrix.platform == 'darwin/universal' && secrets.APPLE_CERTIFICATE != '') || (matrix.platform == 'windows/amd64' && secrets.WINDOWS_CERTIFICATE_DATA != '') }}
           sign-macos-app-id: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
@@ -90,8 +89,20 @@ jobs:
           sign-macos-installer-cert: ${{ secrets.APPLE_CERTIFICATE }}
           sign-macos-installer-cert-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           sign-macos-apple-password: ${{ secrets.APPLE_ID_PASS }}
-          sign-windows-cert: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
-          sign-windows-cert-password: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      - name: Sign Windows Executable with SSL.com ESigner
+        if: matrix.platform == 'windows/amd64'
+        uses: sslcom/esigner-codesign@develop
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: build/bin/${{ vars.APP_NAME || github.event.repository.name }}-amd64-installer.exe
+          output_path: build/bin/
+          malware_block: true
+          environment_name: PROD
 
       - name: Install dependencies for packaging (Linux only)
         if: matrix.platform == 'linux/amd64'
