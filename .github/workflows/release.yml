@@ -107,7 +107,7 @@ jobs:
 
       - name: Rename Signed File
         if: matrix.platform == 'windows/amd64'
-        run: mv build/bin/${{ secrets.APP_NAME }}-amd64-installer-signed.exe build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe
+        run: mv -Force build/bin/${{ secrets.APP_NAME }}-amd64-installer-signed.exe build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe
 
       - name: Install dependencies for packaging (Linux only)
         if: matrix.platform == 'linux/amd64'
