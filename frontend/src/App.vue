@@ -110,7 +110,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { REQUEST_METHODS } from './types';
 import type { Header, QueryParam, RequestConfig, APIResponse, RequestMethod } from './types';
 import { Environment } from '../wailsjs/runtime/runtime';
 import RequestBar from './components/RequestBar.vue';
