@@ -180,7 +180,6 @@ jobs:
         contents: read
       env:
         RELEASE_VERSION: ${{ needs.build.outputs.release_version }}
-        APP_NAME: ${{ env.APP_NAME }}
         FLATPAK_APP_ID: ${{ secrets.BUNDLE_ID }}
       steps:
         - name: Checkout code
@@ -196,13 +195,13 @@ jobs:
           run: |
             cat > "${FLATPAK_APP_ID}.desktop" <<EOF
             [Desktop Entry]
-            Name=${{ env.APP_NAME }}
-            Exec=${{ env.APP_NAME }}
+            Name=${APP_NAME}
+            Exec=${APP_NAME}
             Type=Application
             Icon=${FLATPAK_APP_ID}
             Terminal=false
             Categories=Development;Network;Utility;
-            Comment=${{ env.APP_NAME }} - The minimal API client
+            Comment=${APP_NAME} - The minimal API client
             EOF
             cat > "${FLATPAK_APP_ID}.appdata.xml" <<EOF
             <?xml version="1.0" encoding="UTF-8"?>
