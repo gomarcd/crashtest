@@ -111,27 +111,32 @@ jobs:
           Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\SmallTile.png"
           Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\LargeTile.png"
           
-          # Create MSIX package
+          # Create MSIX package - create an unsigned package first
           & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
           
-          # Certificate setup for signing
-          $certPath = "$env:TEMP\cert.pfx"
-          [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_DATA) | Set-Content -Path $certPath -Encoding Byte
-          
-          # Sign the MSIX package with your real certificate
-          & "$sdkPath\SignTool.exe" sign /fd SHA256 /a /f $certPath /p $env:CERTIFICATE_PASSWORD "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
-          
-          # Clean up certificate
-          Remove-Item -Path $certPath -Force
+          # Output file path for signing
+          Write-Host "MSIX package created at: $(Resolve-Path "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix")"
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-          WINDOWS_CERTIFICATE_DATA: ${{ secrets.WINDOWS_CERTIFICATE_DATA }}
-          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      - name: Sign MSIX Package with SSL.com ESigner
+        uses: sslcom/esigner-codesign@develop
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
+          output_path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64_signed.msix
+          malware_block: true
+          environment_name: PROD
+          clean_logs: false
 
       - name: Upload MSIX package
         uses: actions/upload-artifact@v4
         with:
           name: msix-test-package
-          path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
+          path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64_signed.msix
           if-no-files-found: error
