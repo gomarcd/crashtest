@@ -99,10 +99,13 @@ jobs:
           password: ${{ secrets.ES_PASSWORD }}
           credential_id: ${{ secrets.CREDENTIAL_ID }}
           totp_secret: ${{ secrets.ES_TOTP_SECRET }}
-          file_path: build/bin/${{ secrets.APP_NAME }}-amd64-installer.exe
+          file_path: build/bin/${{ secrets.APP_NAME }}-amd64-installer-signed.exe
           output_path: build/bin
           malware_block: true
           environment_name: PROD
+
+      - name: Rename Signed File
+        run: mv build/bin/***-amd64-installer-signed.exe build/bin/***-amd64-installer.exe
 
       - name: Install dependencies for packaging (Linux only)
         if: matrix.platform == 'linux/amd64'
