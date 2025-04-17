@@ -71,53 +71,35 @@ jobs:
           # Copy built application to package directory
           Copy-Item -Path "build\bin\${env:APP_NAME}.exe" -Destination "AppxPackage\"
           
-          # Create manifest file - PROPERLY FORMATTED XML
-          $manifestContent = @'
-<?xml version="1.0" encoding="utf-8"?>
-<Package
-  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
-  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-  <Identity Name="BUNDLE_ID_PLACEHOLDER"
-    Version="VERSION_PLACEHOLDER"
-    Publisher="CN=Crashtest" 
-    ProcessorArchitecture="x64" />
-  <Properties>
-    <DisplayName>APP_NAME_PLACEHOLDER</DisplayName>
-    <PublisherDisplayName>Crashtest</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
-  </Properties>
-  <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
-  </Dependencies>
-  <Resources>
-    <Resource Language="en-us" />
-  </Resources>
-  <Applications>
-    <Application Id="App" Executable="APP_NAME_PLACEHOLDER.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements
-        DisplayName="APP_NAME_PLACEHOLDER"
-        Description="The minimal API client"
-        BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" />
-      </uap:VisualElements>
-    </Application>
-  </Applications>
-  <Capabilities>
-    <rescap:Capability Name="runFullTrust" />
-  </Capabilities>
-</Package>
-'@
+          # Write the manifest file directly without using multi-line strings
+          $xmlContent = '<?xml version="1.0" encoding="utf-8"?>'
+          $xmlContent += '<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">'
+          $xmlContent += "<Identity Name=`"${env:BUNDLE_ID}`" Version=`"${{ github.event.inputs.version }}.0`" Publisher=`"CN=Crashtest`" ProcessorArchitecture=`"x64`" />"
+          $xmlContent += '<Properties>'
+          $xmlContent += "<DisplayName>${env:APP_NAME}</DisplayName>"
+          $xmlContent += '<PublisherDisplayName>Crashtest</PublisherDisplayName>'
+          $xmlContent += '<Logo>Assets\StoreLogo.png</Logo>'
+          $xmlContent += '</Properties>'
+          $xmlContent += '<Dependencies>'
+          $xmlContent += '<TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />'
+          $xmlContent += '</Dependencies>'
+          $xmlContent += '<Resources>'
+          $xmlContent += '<Resource Language="en-us" />'
+          $xmlContent += '</Resources>'
+          $xmlContent += '<Applications>'
+          $xmlContent += "<Application Id=`"App`" Executable=`"${env:APP_NAME}.exe`" EntryPoint=`"Windows.FullTrustApplication`">"
+          $xmlContent += '<uap:VisualElements DisplayName="' + $env:APP_NAME + '" Description="The minimal API client" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">'
+          $xmlContent += '<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" />'
+          $xmlContent += '</uap:VisualElements>'
+          $xmlContent += '</Application>'
+          $xmlContent += '</Applications>'
+          $xmlContent += '<Capabilities>'
+          $xmlContent += '<rescap:Capability Name="runFullTrust" />'
+          $xmlContent += '</Capabilities>'
+          $xmlContent += '</Package>'
           
-          # Replace placeholders with actual values
-          $manifestContent = $manifestContent.Replace("APP_NAME_PLACEHOLDER", $env:APP_NAME)
-          $manifestContent = $manifestContent.Replace("BUNDLE_ID_PLACEHOLDER", $env:BUNDLE_ID)
-          $manifestContent = $manifestContent.Replace("VERSION_PLACEHOLDER", "${{ github.event.inputs.version }}.0")
-          
-          # Write the manifest file
-          $manifestContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
+          # Write the content to the manifest file
+          $xmlContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
           
           # Create assets directory and copy icons
           mkdir -p AppxPackage\Assets
