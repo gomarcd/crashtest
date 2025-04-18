@@ -81,6 +81,7 @@ jobs:
           $lines = @()
           $lines += "PackageIdentifier: $Publisher.$AppName"
           $lines += "PackageVersion: $Version"
+          $lines += "PackageLocale: en-US"
           $lines += "PackageName: $AppName"
           $lines += "Publisher: $Publisher"
           $lines += "License: MIT"
