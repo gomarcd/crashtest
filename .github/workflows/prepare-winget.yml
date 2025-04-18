@@ -45,7 +45,7 @@ jobs:
           $lines += "License: MIT"
           $lines += "LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE"
           $lines += "ShortDescription: The fast, minimal API tool"
-          $lines += "Description: $AppName is a fast, minimal API client designed with privacy and security in mind."
+          $lines += "Description: $AppName is a modern, cross-platform API client built for developers who need a simple tool for testing APIs."
           $lines += "PackageUrl: https://github.com/${{ github.repository }}"
           $lines += "Installers:"
           $lines += "  - Architecture: x64"
