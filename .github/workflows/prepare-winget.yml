@@ -14,71 +14,65 @@ jobs:
   test-winget:
     runs-on: windows-latest
     steps:
-      - name: Install WinGet
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Install YamlCreate.ps1
         run: |
-          # Download the Microsoft.DesktopAppInstaller package
-          Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/download/v1.6.3133/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile .\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          # Clone the Windows Package Manager repository to get YamlCreate.ps1
+          git clone --depth 1 https://github.com/microsoft/winget-pkgs.git
           
-          # Install the package
-          Add-AppxPackage -Path .\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
-          
-          # Verify installation
-          winget --version
-      
-      - name: Install WinGetCreate
-        run: |
-          # Download WinGetCreate
-          Invoke-WebRequest -Uri https://github.com/microsoft/winget-create/releases/download/v1.5.1.0/wingetcreate.exe -OutFile wingetcreate.exe
-          
-          # Move to a path location
-          mkdir -p tools
-          Move-Item wingetcreate.exe tools/
-          
-          # Add to path
-          echo "$env:GITHUB_WORKSPACE\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
-          # Verify installation
-          wingetcreate --version
-      
-      - name: Generate Winget Manifest
-        run: |
-          # Get the installer URL based on provided inputs
-          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${{ secrets.APP_NAME }}_${{ github.event.inputs.full_version }}_amd64-installer.exe"
-          
-          Write-Host "Using installer URL: $installerUrl"
-          
-          # Use wingetcreate to generate manifest
-          wingetcreate new --urls $installerUrl --version ${{ github.event.inputs.full_version }} --out manifests
-          
-          # Show generated files
-          Write-Host "Generated manifest files:"
-          Get-ChildItem -Path manifests -Recurse
-          
-          # Display content of the manifest (if it exists)
-          $manifestFiles = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml"
-          if ($manifestFiles.Count -gt 0) {
-            Write-Host "Manifest content:"
-            Get-Content $manifestFiles[0].FullName
+          # Verify the script exists
+          if (Test-Path winget-pkgs\Tools\YamlCreate.ps1) {
+            Write-Host "YamlCreate.ps1 found!"
           } else {
-            Write-Host "No manifest files found. Something went wrong."
+            Write-Host "YamlCreate.ps1 not found!"
             exit 1
           }
       
-      - name: Package for submission
+      - name: Create Manifest
+        shell: pwsh
         run: |
-          # Create submission package with correct directory structure
-          $manifestFiles = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml" 
-          if ($manifestFiles.Count -gt 0) {
-            mkdir -p winget-submission
-            xcopy /E /I manifests winget-submission\
-          } else {
-            Write-Host "No manifest files to package."
-            exit 1
-          }
+          # Create manifest directory structure
+          $AppName = "${{ secrets.APP_NAME }}"
+          $Publisher = "gomarcd"
+          $Version = "${{ github.event.inputs.full_version }}"
+          $FirstLetter = $Publisher.Substring(0,1).ToLower()
+          
+          $manifestPath = "manifests\$FirstLetter\$Publisher\$AppName\$Version"
+          New-Item -Path $manifestPath -ItemType Directory -Force
+          
+          # Create the YAML file using PowerShell
+          $yamlContent = @"
+PackageIdentifier: $Publisher.$AppName
+PackageVersion: $Version
+PackageName: $AppName
+Publisher: $Publisher
+License: MIT
+LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE
+ShortDescription: The fast, minimal API tool
+Description: $AppName is a fast, minimal API client designed with privacy and security in mind.
+PackageUrl: https://github.com/${{ github.repository }}
+Installers:
+  - Architecture: x64
+    InstallerType: exe
+    InstallerUrl: https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${AppName}_${Version}_amd64-installer.exe
+    InstallerSha256: placeholder_for_sha256
+    InstallerSwitches:
+      Silent: /S
+      SilentWithProgress: /S
+ManifestType: singleton
+ManifestVersion: 1.0.0
+"@
+          
+          $yamlContent | Out-File -FilePath "$manifestPath\$Publisher.$AppName.yaml" -Encoding utf8
+          
+          Write-Host "Manifest file created at: $manifestPath\$Publisher.$AppName.yaml"
+          Get-Content "$manifestPath\$Publisher.$AppName.yaml"
       
       - name: Upload Manifest
         uses: actions/upload-artifact@v4
         with:
           name: winget-submission
-          path: winget-submission
+          path: manifests
           retention-days: 7
