@@ -17,19 +17,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Install YamlCreate.ps1
-        run: |
-          # Clone the Windows Package Manager repository to get YamlCreate.ps1
-          git clone --depth 1 https://github.com/microsoft/winget-pkgs.git
-          
-          # Verify the script exists
-          if (Test-Path winget-pkgs\Tools\YamlCreate.ps1) {
-            Write-Host "YamlCreate.ps1 found!"
-          } else {
-            Write-Host "YamlCreate.ps1 not found!"
-            exit 1
-          }
-      
       - name: Create Manifest
         shell: pwsh
         run: |
@@ -42,30 +29,30 @@ jobs:
           $manifestPath = "manifests\$FirstLetter\$Publisher\$AppName\$Version"
           New-Item -Path $manifestPath -ItemType Directory -Force
           
-          # Create the YAML file using PowerShell
-          $yamlContent = @"
-PackageIdentifier: $Publisher.$AppName
-PackageVersion: $Version
-PackageName: $AppName
-Publisher: $Publisher
-License: MIT
-LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE
-ShortDescription: The fast, minimal API tool
-Description: $AppName is a fast, minimal API client designed with privacy and security in mind.
-PackageUrl: https://github.com/${{ github.repository }}
-Installers:
-  - Architecture: x64
-    InstallerType: exe
-    InstallerUrl: https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${AppName}_${Version}_amd64-installer.exe
-    InstallerSha256: placeholder_for_sha256
-    InstallerSwitches:
-      Silent: /S
-      SilentWithProgress: /S
-ManifestType: singleton
-ManifestVersion: 1.0.0
-"@
+          # Create the YAML file line by line
+          $lines = @()
+          $lines += "PackageIdentifier: $Publisher.$AppName"
+          $lines += "PackageVersion: $Version"
+          $lines += "PackageName: $AppName"
+          $lines += "Publisher: $Publisher"
+          $lines += "License: MIT"
+          $lines += "LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE"
+          $lines += "ShortDescription: The fast, minimal API tool"
+          $lines += "Description: $AppName is a fast, minimal API client designed with privacy and security in mind."
+          $lines += "PackageUrl: https://github.com/${{ github.repository }}"
+          $lines += "Installers:"
+          $lines += "  - Architecture: x64"
+          $lines += "    InstallerType: exe"
+          $lines += "    InstallerUrl: https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${AppName}_${Version}_amd64-installer.exe"
+          $lines += "    InstallerSha256: placeholder_for_sha256"
+          $lines += "    InstallerSwitches:"
+          $lines += "      Silent: /S"
+          $lines += "      SilentWithProgress: /S"
+          $lines += "ManifestType: singleton"
+          $lines += "ManifestVersion: 1.0.0"
           
-          $yamlContent | Out-File -FilePath "$manifestPath\$Publisher.$AppName.yaml" -Encoding utf8
+          # Write the lines to the file
+          Set-Content -Path "$manifestPath\$Publisher.$AppName.yaml" -Value $lines
           
           Write-Host "Manifest file created at: $manifestPath\$Publisher.$AppName.yaml"
           Get-Content "$manifestPath\$Publisher.$AppName.yaml"
