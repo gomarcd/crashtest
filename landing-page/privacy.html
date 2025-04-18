@@ -223,6 +223,52 @@
         .menu-toggle {
             display: none;
         }
+
+        .privacy-content {
+            padding: 4rem 0;
+            background-color: var(--dark-bg);
+        }
+
+        .privacy-section {
+            margin-bottom: 2rem;
+        }
+
+        .privacy-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #e5e7eb;
+        }
+
+        .privacy-section p, 
+        .privacy-section ul {
+            color: #e5e7eb;
+            line-height: 1.6;
+        }
+
+        .privacy-section ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .privacy-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #818cf8, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: var(--gray-200);
+            margin-bottom: 3rem;
+        }
         .social-icons {
             display: flex;
             gap: 3rem;
@@ -348,61 +394,83 @@
             </nav>
         </div>
     </header>
-    <section>
-       <h1>Privacy Policy</h1>
-        <p><strong>Last Updated: April 18, 2025</strong></p>
+    <section class="privacy-content">
+        <div class="container">
+            <div class="section-title">
+                <h1>Privacy Policy</h1>
+                <p><strong>Last Updated: April 18, 2025</strong></p>
+            </div>
+            
+            <div class="privacy-section">
+                <h2>Introduction</h2>
+                <p>This Privacy Policy describes how Crashtest ("we", "our", or "the application") handles information when you use our application. Crashtest is designed with privacy in mind and operates on the principle of minimal data collection.</p>
+            </div>
 
-        <h2>Introduction</h2>
-        <p>This Privacy Policy describes how Crashtest ("we", "our", or "the application") handles information when you use our application. Crashtest is designed with privacy in mind and operates on the principle of minimal data collection.</p>
+            <div class="privacy-section">
+                <h2>Information Collection and Use</h2>
+                <p>Crashtest is a standalone API client application that:</p>
+                <ul>
+                    <li><strong>Does not collect personal information</strong> from users</li>
+                    <li><strong>Does not require account creation</strong> or user registration</li>
+                    <li><strong>Does not use cookies</strong> or persistent identifiers</li>
+                    <li><strong>Does not track your usage</strong> or activity</li>
+                    <li><strong>Does not store your API requests</strong> on our servers</li>
+                    <li><strong>Does not transmit data</strong> to our servers or third parties</li>
+                </ul>
+                <p>All API requests you make in the application are sent directly to the endpoints you specify. Any data generated during the use of the application (such as API responses) remains on your local device and is not transmitted to us.</p>
+            </div>
 
-        <h2>Information Collection and Use</h2>
-        <p>Crashtest is a standalone API client application that:</p>
-        <ul>
-            <li><strong>Does not collect personal information</strong> from users</li>
-            <li><strong>Does not require account creation</strong> or user registration</li>
-            <li><strong>Does not use cookies</strong> or persistent identifiers</li>
-            <li><strong>Does not track your usage</strong> or activity</li>
-            <li><strong>Does not store your API requests</strong> on our servers</li>
-            <li><strong>Does not transmit data</strong> to our servers or third parties</li>
-        </ul>
-        <p>All API requests you make in the application are sent directly to the endpoints you specify. Any data generated during the use of the application (such as API responses) remains on your local device and is not transmitted to us.</p>
+            <div class="privacy-section">
+                <h2>Data Storage</h2>
+                <p>Crashtest:</p>
+                <ul>
+                    <li><strong>Operates locally</strong> on your device</li>
+                    <li><strong>Does not use cloud storage</strong> for your data</li>
+                    <li><strong>Does not maintain databases</strong> of user information</li>
+                    <li><strong>Does not create user profiles</strong> or save usage history</li>
+                    <li><strong>Does not persist data</strong> between sessions unless explicitly saved by you</li>
+                </ul>
+            </div>
 
-        <h2>Data Storage</h2>
-        <p>Crashtest:</p>
-        <ul>
-            <li><strong>Operates locally</strong> on your device</li>
-            <li><strong>Does not use cloud storage</strong> for your data</li>
-            <li><strong>Does not maintain databases</strong> of user information</li>
-            <li><strong>Does not create user profiles</strong> or save usage history</li>
-            <li><strong>Does not persist data</strong> between sessions unless explicitly saved by you</li>
-        </ul>
+            <div class="privacy-section">
+                <h2>Data Security</h2>
+                <p>Since Crashtest does not collect, store, or transmit personal data, there is minimal risk to your personal information. The application is designed to work entirely on your local device.</p>
+            </div>
 
-        <h2>Data Security</h2>
-        <p>Since Crashtest does not collect, store, or transmit personal data, there is minimal risk to your personal information. The application is designed to work entirely on your local device.</p>
+            <div class="privacy-section">
+                <h2>Third-Party Services</h2>
+                <p>When you use Crashtest to connect to third-party APIs:</p>
+                <ul>
+                    <li>Your requests are sent directly to those third-party services</li>
+                    <li>Any data shared with those services is governed by their respective privacy policies</li>
+                    <li>We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party services</li>
+                </ul>
+            </div>
 
-        <h2>Third-Party Services</h2>
-        <p>When you use Crashtest to connect to third-party APIs:</p>
-        <ul>
-            <li>Your requests are sent directly to those third-party services</li>
-            <li>Any data shared with those services is governed by their respective privacy policies</li>
-            <li>We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party services</li>
-        </ul>
+            <div class="privacy-section">
+                <h2>Changes to This Privacy Policy</h2>
+                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.</p>
+            </div>
 
-        <h2>Changes to This Privacy Policy</h2>
-        <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.</p>
+            <div class="privacy-section">
+                <h2>Your Rights</h2>
+                <p>Since we do not collect personal data, there are no specific actions required to exercise your privacy rights regarding data we hold. Your data remains entirely under your control.</p>
+            </div>
 
-        <h2>Your Rights</h2>
-        <p>Since we do not collect personal data, there are no specific actions required to exercise your privacy rights regarding data we hold. Your data remains entirely under your control.</p>
+            <div class="privacy-section">
+                <h2>Contact Us</h2>
+                <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+                <ul>
+                    <li>Email: privacy@crashtest.app</li>
+                    <li>GitHub: <a href="https://github.com/gomarcd/crashtest" target="_blank">https://github.com/gomarcd/crashtest</a></li>
+                </ul>
+            </div>
 
-        <h2>Contact Us</h2>
-        <p>If you have any questions about this Privacy Policy, please contact us at:</p>
-        <ul>
-            <li>Email: privacy@crashtest.app</li>
-            <li>GitHub: <a href="https://github.com/gomarcd/crashtest" target="_blank">https://github.com/gomarcd/crashtest</a></li>
-        </ul>
-
-        <h2>Compliance Statement</h2>
-        <p>This privacy policy has been prepared to meet requirements of various privacy regulations including GDPR, CCPA, and other applicable laws, even though our application does not collect personal data that would typically be subject to these regulations.</p>
+            <div class="privacy-section">
+                <h2>Compliance Statement</h2>
+                <p>This privacy policy has been prepared to meet requirements of various privacy regulations including GDPR, CCPA, and other applicable laws, even though our application does not collect personal data that would typically be subject to these regulations.</p>
+            </div>
+        </div>
     </section>
     <footer>
         <div class="container">
