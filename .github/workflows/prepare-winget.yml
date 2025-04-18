@@ -14,10 +14,31 @@ jobs:
   test-winget:
     runs-on: windows-latest
     steps:
-      - name: Install Winget Create
+      - name: Install WinGet
         run: |
-          # Install wingetcreate tool
-          winget install -e --id Microsoft.WingetCreate --accept-source-agreements --accept-package-agreements
+          # Download the Microsoft.DesktopAppInstaller package
+          Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/download/v1.6.3133/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile .\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          
+          # Install the package
+          Add-AppxPackage -Path .\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          
+          # Verify installation
+          winget --version
+      
+      - name: Install WinGetCreate
+        run: |
+          # Download WinGetCreate
+          Invoke-WebRequest -Uri https://github.com/microsoft/winget-create/releases/download/v1.5.1.0/wingetcreate.exe -OutFile wingetcreate.exe
+          
+          # Move to a path location
+          mkdir -p tools
+          Move-Item wingetcreate.exe tools/
+          
+          # Add to path
+          echo "$env:GITHUB_WORKSPACE\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+          # Verify installation
+          wingetcreate --version
       
       - name: Generate Winget Manifest
         run: |
@@ -27,22 +48,33 @@ jobs:
           Write-Host "Using installer URL: $installerUrl"
           
           # Use wingetcreate to generate manifest
-          & "C:\Users\runneradmin\AppData\Local\Microsoft\WinGet\Packages\Microsoft.WingetCreate_1.5.1.0_neutral__8wekyb3d8bbwe\wingetcreate.exe" new --urls $installerUrl --version ${{ github.event.inputs.full_version }} --out manifests
+          wingetcreate new --urls $installerUrl --version ${{ github.event.inputs.full_version }} --out manifests
           
           # Show generated files
           Write-Host "Generated manifest files:"
           Get-ChildItem -Path manifests -Recurse
           
-          # Display content of the manifest
-          $manifestFile = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml" | Select-Object -First 1
-          Write-Host "Manifest content:"
-          Get-Content $manifestFile.FullName
+          # Display content of the manifest (if it exists)
+          $manifestFiles = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml"
+          if ($manifestFiles.Count -gt 0) {
+            Write-Host "Manifest content:"
+            Get-Content $manifestFiles[0].FullName
+          } else {
+            Write-Host "No manifest files found. Something went wrong."
+            exit 1
+          }
       
       - name: Package for submission
         run: |
           # Create submission package with correct directory structure
-          mkdir -p winget-submission
-          xcopy /E /I manifests winget-submission\
+          $manifestFiles = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml" 
+          if ($manifestFiles.Count -gt 0) {
+            mkdir -p winget-submission
+            xcopy /E /I manifests winget-submission\
+          } else {
+            Write-Host "No manifest files to package."
+            exit 1
+          }
       
       - name: Upload Manifest
         uses: actions/upload-artifact@v4
