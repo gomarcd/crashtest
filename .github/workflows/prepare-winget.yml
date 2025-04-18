@@ -20,6 +20,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
+      - name: Install WinGet
+        run: |
+          # Download the Microsoft.DesktopAppInstaller package
+          Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          
+          # Install the package
+          Add-AppxPackage -Path Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          
+          # Verify installation
+          winget --version
+        
+      - name: Check if package exists
+        id: check_package
+        shell: pwsh
+        run: |
+          # Define variables
+          $Publisher = "gomarcd"
+          $AppName = "${{ secrets.APP_NAME }}"
+          $PackageId = "$Publisher.$AppName"
+          
+          Write-Host "Checking if package $PackageId already exists in Winget..."
+          
+          # Search for the package in Winget
+          $searchResult = winget search --exact $PackageId
+          $exitCode = $LASTEXITCODE
+          
+          if ($exitCode -eq 0) {
+            Write-Host "Package found in Winget repository!"
+            Write-Host "This appears to be an update to an existing package."
+            echo "package_exists=true" >> $env:GITHUB_OUTPUT
+            echo "action=update" >> $env:GITHUB_OUTPUT
+            
+            # Get available versions
+            Write-Host "Available versions:"
+            winget show $PackageId
+          } else {
+            Write-Host "Package not found in Winget repository."
+            Write-Host "This appears to be a new package submission."
+            echo "package_exists=false" >> $env:GITHUB_OUTPUT
+            echo "action=new" >> $env:GITHUB_OUTPUT
+          }
+        
       - name: Create Manifest
         shell: pwsh
         run: |
@@ -29,6 +71,7 @@ jobs:
           $Version = "${{ github.event.inputs.full_version }}"
           $FirstLetter = $Publisher.Substring(0,1).ToLower()
           $Hash = "${{ github.event.inputs.sha256 }}"
+          $Action = "${{ steps.check_package.outputs.action }}"
           
           $manifestPath = "manifests\$FirstLetter\$Publisher\$AppName\$Version"
           New-Item -Path $manifestPath -ItemType Directory -Force
@@ -72,11 +115,27 @@ jobs:
           retention-days: 7
           
       - name: Provide Submission Instructions
+        shell: pwsh
         run: |
+          $action = "${{ steps.check_package.outputs.action }}"
+          $packageExists = "${{ steps.check_package.outputs.package_exists }}" -eq "true"
+          
           Write-Host "==== WINGET SUBMISSION INSTRUCTIONS ===="
+          Write-Host "Package check result: $($packageExists ? 'Package exists' : 'New package')"
+          Write-Host "Submission type: $action"
+          Write-Host ""
           Write-Host "1. Download the 'winget-submission' artifact"
           Write-Host "2. Extract the contents"
           Write-Host "3. Fork the microsoft/winget-pkgs repository"
-          Write-Host "4. Copy the manifest directory structure to your fork"
-          Write-Host "5. Commit and create a PR to microsoft/winget-pkgs"
+          Write-Host "4. Copy the manifests directory structure to your fork"
+          Write-Host "5. Create a branch for your submission"
+          
+          if ($packageExists) {
+            Write-Host "6. Commit with message 'Update gomarcd.Crashtest to ${{ github.event.inputs.full_version }}'"
+          } else {
+            Write-Host "6. Commit with message 'Add gomarcd.Crashtest version ${{ github.event.inputs.full_version }}'"
+          }
+          
+          Write-Host "7. Create a pull request to microsoft/winget-pkgs"
+          Write-Host "8. Monitor the PR for any validation feedback"
           Write-Host "==== END INSTRUCTIONS ===="
