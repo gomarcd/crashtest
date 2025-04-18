@@ -1,0 +1,52 @@
+name: Test Winget Submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.0.10)'
+        required: true
+      full_version:
+        description: 'Full version (e.g., 2025.0.0.10)'
+        required: true
+
+jobs:
+  test-winget:
+    runs-on: windows-latest
+    steps:
+      - name: Install Winget Create
+        run: |
+          # Install wingetcreate tool
+          winget install -e --id Microsoft.WingetCreate --accept-source-agreements --accept-package-agreements
+      
+      - name: Generate Winget Manifest
+        run: |
+          # Get the installer URL based on provided inputs
+          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${{ secrets.APP_NAME }}_${{ github.event.inputs.full_version }}_amd64-installer.exe"
+          
+          Write-Host "Using installer URL: $installerUrl"
+          
+          # Use wingetcreate to generate manifest
+          & "C:\Users\runneradmin\AppData\Local\Microsoft\WinGet\Packages\Microsoft.WingetCreate_1.5.1.0_neutral__8wekyb3d8bbwe\wingetcreate.exe" new --urls $installerUrl --version ${{ github.event.inputs.full_version }} --out manifests
+          
+          # Show generated files
+          Write-Host "Generated manifest files:"
+          Get-ChildItem -Path manifests -Recurse
+          
+          # Display content of the manifest
+          $manifestFile = Get-ChildItem -Path manifests -Recurse -Filter "*.yaml" | Select-Object -First 1
+          Write-Host "Manifest content:"
+          Get-Content $manifestFile.FullName
+      
+      - name: Package for submission
+        run: |
+          # Create submission package with correct directory structure
+          mkdir -p winget-submission
+          xcopy /E /I manifests winget-submission\
+      
+      - name: Upload Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-submission
+          path: winget-submission
+          retention-days: 7
