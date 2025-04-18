@@ -111,32 +111,17 @@ jobs:
           Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\SmallTile.png"
           Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\LargeTile.png"
           
-          # Create MSIX package - create an unsigned package first
+          # Create MSIX package (unsigned)
           & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
           
-          # Output file path for signing
-          Write-Host "MSIX package created at: $(Resolve-Path "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix")"
+          Write-Host "Unsigned MSIX package created for testing with the Microsoft Store."
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-
-      - name: Sign MSIX Package with SSL.com ESigner
-        uses: sslcom/esigner-codesign@develop
-        with:
-          command: sign
-          username: ${{ secrets.ES_USERNAME }}
-          password: ${{ secrets.ES_PASSWORD }}
-          credential_id: ${{ secrets.CREDENTIAL_ID }}
-          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
-          file_path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
-          output_path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64_signed.msix
-          malware_block: true
-          environment_name: PROD
-          clean_logs: false
 
       - name: Upload MSIX package
         uses: actions/upload-artifact@v4
         with:
           name: msix-test-package
-          path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64_signed.msix
+          path: ${{ secrets.APP_NAME }}_${{ github.event.inputs.version }}_amd64.msix
           if-no-files-found: error
