@@ -29,31 +29,25 @@ jobs:
         id: check_package
         shell: pwsh
         run: |
-          # Define variables
           $Publisher = "gomarcd"
           $AppName = "${{ secrets.APP_NAME }}"
           $PackageId = "$Publisher.$AppName"
-          
           Write-Host "Checking if package $PackageId already exists in Winget..."
-          
-          # Search for the package in Winget
-          $searchResult = winget search --exact $PackageId 2>&1
+          $searchOutput = & winget search --exact $PackageId 2>&1
           $exitCode = $LASTEXITCODE
-          
           if ($exitCode -eq 0) {
             Write-Host "Package found in Winget repository!"
             Write-Host "This appears to be an update to an existing package."
             echo "package_exists=true" >> $env:GITHUB_OUTPUT
             echo "action=update" >> $env:GITHUB_OUTPUT
-            
-            # Get available versions
             Write-Host "Available versions:"
             winget show $PackageId
           } else {
-            Write-Host "Package not found in Winget repository."
+            Write-Host "Package not found in Winget repository (Exit code: $exitCode)"
             Write-Host "This appears to be a new package submission."
             echo "package_exists=false" >> $env:GITHUB_OUTPUT
             echo "action=new" >> $env:GITHUB_OUTPUT
+            exit 0
           }
         
       - name: Create Manifest
@@ -82,7 +76,7 @@ jobs:
           $lines += "License: MIT"
           $lines += "LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE"
           $lines += "ShortDescription: The fast, minimal API tool"
-          $lines += "Description: $AppName is a fast, minimal API client designed with privacy and security in mind."
+          $lines += "Description: $AppName is a modern, cross-platform API client built for developers who need a simple tool for testing APIs."
           $lines += "PackageUrl: https://github.com/${{ github.repository }}"
           $lines += "Installers:"
           $lines += "  - Architecture: x64"
