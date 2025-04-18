@@ -1,4 +1,4 @@
-name: Test Winget Submission
+name: Prepare Winget Submission
 
 on:
   workflow_dispatch:
@@ -9,9 +9,12 @@ on:
       full_version:
         description: 'Full version (e.g., 2025.0.0.10)'
         required: true
+      sha256:
+        description: 'SHA256 hash of the installer (from release notes)'
+        required: true
 
 jobs:
-  test-winget:
+  prepare-winget:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -25,9 +28,13 @@ jobs:
           $Publisher = "gomarcd"
           $Version = "${{ github.event.inputs.full_version }}"
           $FirstLetter = $Publisher.Substring(0,1).ToLower()
+          $Hash = "${{ github.event.inputs.sha256 }}"
           
           $manifestPath = "manifests\$FirstLetter\$Publisher\$AppName\$Version"
           New-Item -Path $manifestPath -ItemType Directory -Force
+          
+          # Use the correct file naming pattern
+          $installerFileName = "${AppName}_${Version}_amd64_installer.exe"
           
           # Create the YAML file line by line
           $lines = @()
@@ -43,8 +50,8 @@ jobs:
           $lines += "Installers:"
           $lines += "  - Architecture: x64"
           $lines += "    InstallerType: exe"
-          $lines += "    InstallerUrl: https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/${AppName}_${Version}_amd64-installer.exe"
-          $lines += "    InstallerSha256: placeholder_for_sha256"
+          $lines += "    InstallerUrl: https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag }}/$installerFileName"
+          $lines += "    InstallerSha256: $Hash"
           $lines += "    InstallerSwitches:"
           $lines += "      Silent: /S"
           $lines += "      SilentWithProgress: /S"
@@ -63,3 +70,13 @@ jobs:
           name: winget-submission
           path: manifests
           retention-days: 7
+          
+      - name: Provide Submission Instructions
+        run: |
+          Write-Host "==== WINGET SUBMISSION INSTRUCTIONS ===="
+          Write-Host "1. Download the 'winget-submission' artifact"
+          Write-Host "2. Extract the contents"
+          Write-Host "3. Fork the microsoft/winget-pkgs repository"
+          Write-Host "4. Copy the manifest directory structure to your fork"
+          Write-Host "5. Commit and create a PR to microsoft/winget-pkgs"
+          Write-Host "==== END INSTRUCTIONS ===="
