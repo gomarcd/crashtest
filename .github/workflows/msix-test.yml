@@ -74,10 +74,10 @@ jobs:
           # Write the manifest file directly without using multi-line strings
           $xmlContent = '<?xml version="1.0" encoding="utf-8"?>'
           $xmlContent += '<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">'
-          $xmlContent += "<Identity Name=`"${env:BUNDLE_ID}`" Version=`"${{ github.event.inputs.version }}.0`" Publisher=`"CN=Crashtest`" ProcessorArchitecture=`"x64`" />"
+          $xmlContent += "<Identity Name=`"${env:BUNDLE_ID}`" Version=`"${{ github.event.inputs.version }}.0`" Publisher=`"CN=Breakthrough Software Inc.`" ProcessorArchitecture=`"x64`" />"
           $xmlContent += '<Properties>'
           $xmlContent += "<DisplayName>${env:APP_NAME}</DisplayName>"
-          $xmlContent += '<PublisherDisplayName>Crashtest</PublisherDisplayName>'
+          $xmlContent += '<PublisherDisplayName>Breakthrough Software Inc.</PublisherDisplayName>'
           $xmlContent += '<Logo>Assets\StoreLogo.png</Logo>'
           $xmlContent += '</Properties>'
           $xmlContent += '<Dependencies>'
