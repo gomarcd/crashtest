@@ -21,16 +21,10 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Install WinGet
-        run: |
-          # Download the Microsoft.DesktopAppInstaller package
-          Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+        uses: Cyberboss/install-winget@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-          # Install the package
-          Add-AppxPackage -Path Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
-          
-          # Verify installation
-          winget --version
-        
       - name: Check if package exists
         id: check_package
         shell: pwsh
@@ -43,7 +37,7 @@ jobs:
           Write-Host "Checking if package $PackageId already exists in Winget..."
           
           # Search for the package in Winget
-          $searchResult = winget search --exact $PackageId
+          $searchResult = winget search --exact $PackageId 2>&1
           $exitCode = $LASTEXITCODE
           
           if ($exitCode -eq 0) {
@@ -88,7 +82,7 @@ jobs:
           $lines += "License: MIT"
           $lines += "LicenseUrl: https://github.com/${{ github.repository }}/blob/main/LICENSE"
           $lines += "ShortDescription: The fast, minimal API tool"
-          $lines += "Description: $AppName is a modern, cross-platform API client built for developers who need a simple tool for testing APIs."
+          $lines += "Description: $AppName is a fast, minimal API client designed with privacy and security in mind."
           $lines += "PackageUrl: https://github.com/${{ github.repository }}"
           $lines += "Installers:"
           $lines += "  - Architecture: x64"
