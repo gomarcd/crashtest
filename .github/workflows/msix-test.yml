@@ -34,16 +34,16 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build Wails app
-        run: wails build
-        env:
-          APP_NAME: ${{ secrets.APP_NAME }}
-
       - name: Copy app icon
         shell: bash
         run: |
           mkdir -p build
           cp ./appicon.png build/appicon.png
+          
+      - name: Build Wails app
+        run: wails build
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
 
       - name: Create MSIX Package
         shell: powershell
