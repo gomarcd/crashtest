@@ -34,6 +34,18 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Set up ImageMagick
+        uses: mfinelli/setup-imagemagick@v2
+
+      - name: Check for existing icon
+        shell: bash
+        run: |
+          ls -la build/ || echo "build directory doesn't exist yet"
+          mkdir -p build/windows
+          ls -la build/windows/ || echo "build/windows directory was just created"
+          # Remove any existing icon.ico to force regeneration
+          rm -f build/windows/icon.ico
+
       - name: Copy app icon
         shell: bash
         run: |
@@ -105,16 +117,16 @@ jobs:
           # Create assets directory and copy icons
           mkdir -p AppxPackage\Assets
           
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\StoreLogo.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square150x150Logo.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Wide310x150Logo.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\SmallTile.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\LargeTile.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png"
-          Copy-Item -Path "build\appicon.png" -Destination "AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png"
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\StoreLogo.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square150x150Logo.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Wide310x150Logo.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\SmallTile.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\LargeTile.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
           
           # Create MSIX package (unsigned)
           & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
