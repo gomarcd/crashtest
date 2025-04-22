@@ -45,11 +45,11 @@ jobs:
         shell: powershell
         run: |
           mkdir -p build/windows
-          magick convert ./appicon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/icon.ico
-          if (Test-Path build/windows/icon.ico) {
-            Write-Host "Successfully created icon.ico"
+          magick ./appicon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/appicon.ico
+          if (Test-Path build/windows/appicon.ico) {
+            Write-Host "Successfully created appicon.ico"
           } else {
-            Write-Error "Failed to create icon.ico"
+            Write-Error "Failed to create appicon.ico"
             exit 1
           }
 
@@ -111,18 +111,18 @@ jobs:
           mkdir -p AppxPackage\Assets
           
           # Create correctly sized assets with proper transparency
-          magick convert ./appicon.png -resize 50x50 -background none AppxPackage\Assets\StoreLogo.png
-          magick convert ./appicon.png -resize 150x150 -background none AppxPackage\Assets\Square150x150Logo.png
-          magick convert ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.png
-          magick convert ./appicon.png -resize 310x150 -background none AppxPackage\Assets\Wide310x150Logo.png
-          magick convert ./appicon.png -resize 71x71 -background none AppxPackage\Assets\SmallTile.png
-          magick convert ./appicon.png -resize 310x310 -background none AppxPackage\Assets\LargeTile.png
+          magick ./appicon.png -resize 50x50 -background none AppxPackage\Assets\StoreLogo.png
+          magick ./appicon.png -resize 150x150 -background none AppxPackage\Assets\Square150x150Logo.png
+          magick ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.png
+          magick ./appicon.png -resize 310x150 -background none AppxPackage\Assets\Wide310x150Logo.png
+          magick ./appicon.png -resize 71x71 -background none AppxPackage\Assets\SmallTile.png
+          magick ./appicon.png -resize 310x310 -background none AppxPackage\Assets\LargeTile.png
           
           # Create targetsize variations with proper transparency
-          magick convert ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
-          magick convert ./appicon.png -resize 32x32 -background none AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
-          magick convert ./appicon.png -resize 24x24 -background none AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
-          magick convert ./appicon.png -resize 16x16 -background none AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
+          magick ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
+          magick ./appicon.png -resize 32x32 -background none AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
+          magick ./appicon.png -resize 24x24 -background none AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+          magick ./appicon.png -resize 16x16 -background none AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
           
           & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
           Write-Host "Unsigned MSIX package created for testing with the Microsoft Store."
