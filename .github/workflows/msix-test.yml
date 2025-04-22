@@ -37,13 +37,9 @@ jobs:
       - name: Install ImageMagick
         shell: powershell
         run: |
-          # Download portable version of ImageMagick
-          Invoke-WebRequest -Uri "https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-29-portable-Q16-HDRI-x64.zip" -OutFile "imagemagick.zip"
-          Expand-Archive -Path "imagemagick.zip" -DestinationPath "C:\ImageMagick"
-          # Add to PATH
-          echo "C:\ImageMagick" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          # Test installation
-          C:\ImageMagick\magick.exe -version
+          choco install imagemagick -y
+          # Verify installation
+          magick -version
 
       - name: Setup Icon for Wails
         shell: powershell
