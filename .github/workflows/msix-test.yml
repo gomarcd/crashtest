@@ -98,7 +98,7 @@ jobs:
           $xmlContent += '</Resources>'
           $xmlContent += '<Applications>'
           $xmlContent += "<Application Id=`"App`" Executable=`"${env:APP_NAME}.exe`" EntryPoint=`"Windows.FullTrustApplication`">"
-          $xmlContent += '<uap:VisualElements DisplayName="' + $env:APP_NAME + '" Description="The minimal API client" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">'
+          $xmlContent += '<uap:VisualElements DisplayName="' + $env:APP_NAME + '" Description="The minimal API client" BackgroundColor="#00000000" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">'
           $xmlContent += '<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" />'
           $xmlContent += '</uap:VisualElements>'
           $xmlContent += '</Application>'
@@ -109,17 +109,22 @@ jobs:
           $xmlContent += '</Package>'
           $xmlContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
           mkdir -p AppxPackage\Assets
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\StoreLogo.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square150x150Logo.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Wide310x150Logo.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\SmallTile.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\LargeTile.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
-          magick convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
-          & "$sdkPath\MakeAppx.exe" pack /nc /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
+          
+          # Create correctly sized assets with proper transparency
+          magick convert ./appicon.png -resize 50x50 -background none AppxPackage\Assets\StoreLogo.png
+          magick convert ./appicon.png -resize 150x150 -background none AppxPackage\Assets\Square150x150Logo.png
+          magick convert ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.png
+          magick convert ./appicon.png -resize 310x150 -background none AppxPackage\Assets\Wide310x150Logo.png
+          magick convert ./appicon.png -resize 71x71 -background none AppxPackage\Assets\SmallTile.png
+          magick convert ./appicon.png -resize 310x310 -background none AppxPackage\Assets\LargeTile.png
+          
+          # Create targetsize variations with proper transparency
+          magick convert ./appicon.png -resize 44x44 -background none AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
+          magick convert ./appicon.png -resize 32x32 -background none AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
+          magick convert ./appicon.png -resize 24x24 -background none AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+          magick convert ./appicon.png -resize 16x16 -background none AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
+          
+          & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
           Write-Host "Unsigned MSIX package created for testing with the Microsoft Store."
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
