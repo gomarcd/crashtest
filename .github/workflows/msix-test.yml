@@ -34,17 +34,28 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Set up ImageMagick
-        uses: mfinelli/setup-imagemagick@v2
-
-      - name: Check for existing icon
-        shell: bash
+      - name: Install ImageMagick
+        shell: powershell
         run: |
-          ls -la build/ || echo "build directory doesn't exist yet"
+          # Download portable version of ImageMagick
+          Invoke-WebRequest -Uri "https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-29-portable-Q16-HDRI-x64.zip" -OutFile "imagemagick.zip"
+          Expand-Archive -Path "imagemagick.zip" -DestinationPath "C:\ImageMagick"
+          # Add to PATH
+          echo "C:\ImageMagick" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # Test installation
+          C:\ImageMagick\magick.exe -version
+
+      - name: Setup Icon for Wails
+        shell: powershell
+        run: |
           mkdir -p build/windows
-          ls -la build/windows/ || echo "build/windows directory was just created"
-          # Remove any existing icon.ico to force regeneration
-          rm -f build/windows/icon.ico
+          C:\ImageMagick\magick.exe convert ./appicon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/icon.ico
+          if (Test-Path build/windows/icon.ico) {
+            Write-Host "Successfully created icon.ico"
+          } else {
+            Write-Error "Failed to create icon.ico"
+            exit 1
+          }
 
       - name: Copy app icon
         shell: bash
@@ -60,10 +71,8 @@ jobs:
       - name: Create MSIX Package
         shell: powershell
         run: |
-          # Find the SDK path
           $sdkPath = $null
           $possibleSdkVersions = @("10.0.22621.0", "10.0.22000.0", "10.0.20348.0", "10.0.19041.0", "10.0.18362.0")
-          
           foreach ($version in $possibleSdkVersions) {
             if (Test-Path "C:\Program Files (x86)\Windows Kits\10\bin\$version\x64\MakeAppx.exe") {
               $sdkPath = "C:\Program Files (x86)\Windows Kits\10\bin\$version\x64"
@@ -71,22 +80,14 @@ jobs:
               break
             }
           }
-          
           if (-not $sdkPath) {
             Write-Error "Could not find Windows SDK tools."
             exit 1
           }
-          
-          # Create MSIX manifest directory
           mkdir -p AppxPackage
-          
-          # Copy built application to package directory
           Copy-Item -Path "build\bin\${env:APP_NAME}.exe" -Destination "AppxPackage\"
-          
-          # Write the manifest file directly without using multi-line strings
           $xmlContent = '<?xml version="1.0" encoding="utf-8"?>'
           $xmlContent += '<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">'
-          # Update these identity values to match exactly what Partner Center expects
           $xmlContent += "<Identity Name=`"BreakthroughSoftwareInc.Crashtest`" Version=`"${{ github.event.inputs.version }}.0`" Publisher=`"CN=4C5C21A7-60BF-4E75-A4A0-1D3AF18BFDAC`" ProcessorArchitecture=`"x64`" />"
           $xmlContent += '<Properties>'
           $xmlContent += "<DisplayName>${env:APP_NAME}</DisplayName>"
@@ -110,27 +111,19 @@ jobs:
           $xmlContent += '<rescap:Capability Name="runFullTrust" />'
           $xmlContent += '</Capabilities>'
           $xmlContent += '</Package>'
-          
-          # Write the content to the manifest file
           $xmlContent | Out-File -FilePath "AppxPackage\AppxManifest.xml" -Encoding utf8
-          
-          # Create assets directory and copy icons
           mkdir -p AppxPackage\Assets
-          
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\StoreLogo.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square150x150Logo.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Wide310x150Logo.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\SmallTile.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\LargeTile.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
-          magick convert build\appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
-          
-          # Create MSIX package (unsigned)
-          & "$sdkPath\MakeAppx.exe" pack /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
-          
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\StoreLogo.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square150x150Logo.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Wide310x150Logo.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\SmallTile.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\LargeTile.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-44_altform-unplated.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-32_altform-unplated.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+          C:\ImageMagick\magick.exe convert ./appicon.png -define png:color-type=6 -channel RGBA -alpha set -background transparent AppxPackage\Assets\Square44x44Logo.targetsize-16_altform-unplated.png
+          & "$sdkPath\MakeAppx.exe" pack /nc /d AppxPackage /p "${env:APP_NAME}_${{ github.event.inputs.version }}_amd64.msix"
           Write-Host "Unsigned MSIX package created for testing with the Microsoft Store."
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
