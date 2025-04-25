@@ -16,6 +16,7 @@ body {
   height: 100vh;
   background-color: #111827;
   color: #e2e8f0;
+  overflow: hidden;
 }
 
 #app {
