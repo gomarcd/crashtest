@@ -28,7 +28,7 @@
               :style="{
                 '--wails-draggable': 'none',
                 'color': 'transparent', 
-                'caretColor': 'white'
+                'caretColor': 'white',
               }"
               @focus="storePreviousUrl"
               @keyup.enter="sendRequest"
@@ -62,7 +62,7 @@
         </div>
       </div>
 
-      <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2 overflow-hidden">
         <div class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col">
           <div class="h-[calc(100%-40px)]">
             <div class="flex border-b border-gray-700 min-h-[41px]">
@@ -105,10 +105,9 @@
         </div>
 
         <div
-          class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col transition-shadow duration-300 ease-in-out"
+          class="border border-gray-700 rounded-md overflow-hidden shadow-sm bg-gray-800 flex flex-col transition-shadow duration-300 ease-in-out h-full"
           :class="{ 'response-glow': isResponseGlowing }"
         >
-          <div class="h-[calc(100%-40px)]">
             <div :class="['flex justify-between border-b border-gray-700 px-4 min-h-[41px]', !response ? 'items-center' : '']">
               <div class="text-gray-500" v-if="!response">Response</div>
               <div class="flex" v-if="response">
@@ -132,7 +131,7 @@
               </div>
               <div v-else class="h-[32px]"></div>
             </div>
-            <div class="h-[calc(100%-41px)] overflow-y-auto">
+            <div class="flex-1 overflow-y-auto min-h-0">
               <div v-if="activeResponseTab === 'body' && response" style="--wails-draggable:none;">
                 <div v-if="formattedResponse" class="relative p-4">
                   <button class="absolute top-2 right-2 text-gray-400 hover:text-indigo-400 transition-colors" @click="copyToClipboard" title="Copy to Clipboard">
@@ -151,7 +150,6 @@
               </div>
               <div v-if="!response" class="flex items-center justify-center h-full text-gray-500">Send a request to see the response here</div>
             </div>
-          </div>
         </div>
       </div>
     </main>
